@@ -5,6 +5,12 @@
 #include "LogicNode.h"
 #include "IdManager.h"
 
+struct NodeInfo {
+	Component::Type type;
+	Vector2 position;
+	std::vector<PinRef> input_wires;
+};
+
 
 class Circuit
 {
@@ -25,12 +31,13 @@ public:
 		component.m_component.m_input_wires[input_index] = wire_ID;
 	}
 
-	void addWire(PinRef input, PinRef output) {
+	int addWire(PinRef input, PinRef output) {
 		int id = m_wire_ids.getNextId();
 		auto& input_component = getComponent(input.ComponentID);
 		input_component.m_component.m_output_wires.push_back(id);
 		m_wires.push_back({ input, output, input_component.m_component.m_output_pin.value, id });
 		m_wire_ids.setIndex(id, m_wires.size() - 1);
+		return id;
 	}
 
 	LogicNode& getComponent(int id) {

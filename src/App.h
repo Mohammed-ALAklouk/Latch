@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "LogicNode.h"
 #include "Circuit.h"
+#include "Action.h"
 
 struct PanningContext {
 	Vector2 initial_pos;
@@ -15,6 +16,7 @@ struct PanningContext {
 
 struct DraggingContext {
 	Vector2 initial_mouse_pos;
+	Vector2 delta;
 };
 
 struct ConnectingContext {
@@ -37,12 +39,6 @@ struct UITheme {
 	Color logicX;      // Undefined
 };
 
-struct NodeInfo {
-	Component::Type type;
-	Vector2 position;
-	std::vector<PinRef> input_wires;
-};
-
 class App
 {
 public:
@@ -63,6 +59,7 @@ private:
 	void UpdateDraggingState(const Vector2& mouse_pos);
 	void UpdateConnectingState(const Vector2& mouse_pos);
 	void UpdateSelectingState(const Vector2& mouse_pos);
+	std::vector<NodeInfo> getNodeInfo(std::vector<int>& ids);
 
 	
 	int cell_size = 20;
@@ -112,6 +109,8 @@ private:
 	int number_of_ticks = 0;
 
 	std::vector<NodeInfo> copy_of_components;
+	ActionManager action_manager;
+
 
 
 	UITheme darkTheme = {

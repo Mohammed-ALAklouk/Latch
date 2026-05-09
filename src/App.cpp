@@ -50,7 +50,8 @@ void App::HandleInput()
     if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_RIGHT) && !gate_placed)
     {
         auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
-		circuit.addComponent(selected_component_type, world_mouse_pos);
+		int new_id = circuit.addComponent(selected_component_type, world_mouse_pos);
+        action_manager.addAction<ComponentPlacedAction>(new_id);
         gate_placed = true;
     }
 
@@ -61,13 +62,16 @@ void App::HandleInput()
 		circuit.evaluate();
 
     if (IsKeyPressed(KEY_DELETE)) {
-		for (int id : selected_component_ids) {
+        action_manager.addAction<ComponentsDeletedAction>(getNodeInfo(selected_component_ids));
+		
+        for (int id : selected_component_ids) {
             circuit.removeComponent(id);
         }
 
         if (selected_wire_id != -1) {
             circuit.removeWire(selected_wire_id);
         }
+        
 
         selected_component_ids.clear();
         selected_wire_id = -1;
@@ -76,51 +80,25 @@ void App::HandleInput()
     if (IsKeyDown(KEY_LEFT_CONTROL))
     {
         if (IsKeyPressed(KEY_C)) {
-            copy_of_components.clear();
-			Vector2 min = { FLT_MAX, FLT_MAX };
-			Vector2 max = { FLT_MIN, FLT_MIN };
+            copy_of_components = getNodeInfo(selected_component_ids);
+            
+			Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+			Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
 
-            for (int id : selected_component_ids) {
-                LogicNode component_copy = circuit.getComponent(id);
-                NodeInfo node_info = { component_copy.m_component.m_type, {component_copy.rect.x, component_copy.rect.y} };
-                copy_of_components.push_back(node_info);
-                min.x = std::min(min.x, component_copy.rect.x);
-                min.y = std::min(min.y, component_copy.rect.y);
-                max.x = std::max(max.x, component_copy.rect.x + component_copy.rect.width);
-                max.y = std::max(max.y, component_copy.rect.y + component_copy.rect.height);
-            }
+            for (const auto& component : copy_of_components) {
+                if (component.position.x < min.x) min.x = component.position.x;
+                if (component.position.y < min.y) min.y = component.position.y;
+                if (component.position.x > max.x) max.x = component.position.x;
+                if (component.position.y > max.y) max.y = component.position.y;
+			}
 
-			int index = 0;
-            for (int id : selected_component_ids) {
-                
-				auto& component = circuit.getComponent(id);
-                for (int input_wire_id : component.m_component.m_input_wires) {
-                    if (input_wire_id == -1) {
-                        copy_of_components[index].input_wires.push_back({ -1, 0 });
-						continue;
-					}
+			auto mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
 
-                    Wire& wire = circuit.getWire(input_wire_id);
-                    int source_component_id = wire.input.ComponentID;
-                    if (std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id) != selected_component_ids.end()) {
-                        int source_index = std::distance(selected_component_ids.begin(), std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id));
-                        copy_of_components[index].input_wires.push_back({ source_index, wire.input.PinIndex });
-                    }
-                    else {
-                        copy_of_components[index].input_wires.push_back({ -1, 0 });
-					}
-
-                }
-
-				index++;
-            }
-
-			// Center the copied components around origin
+			// Center the copied components around the origin
             for (auto& component : copy_of_components) {
-                component.position.x -= min.x + (max.x - min.x) / 2;
-                component.position.y -= min.y + (max.y - min.y) / 2;
+                component.position.x -= (min.x + max.x) / 2.0f;
+                component.position.y -= (min.y + max.y) / 2.0f;
             }
-
         }
         if (IsKeyPressed(KEY_V)) {
             std::vector<int> new_ids;
@@ -129,6 +107,7 @@ void App::HandleInput()
                 int new_id = circuit.addComponent(component.type, { component.position.x + world_mouse_pos.x, component.position.y + world_mouse_pos.y });
 				new_ids.push_back(new_id);
             }
+            
 
             for (int i = 0; i < copy_of_components.size(); ++i) {
                 const auto& component = copy_of_components[i];
@@ -141,8 +120,12 @@ void App::HandleInput()
                 }
 			}
 
+            action_manager.addAction<PasteAction>(new_ids);
             selected_component_ids = new_ids;
 		}
+
+        if (IsKeyPressed(KEY_Z)) 
+			action_manager.undo(circuit);
     }
 }
 
@@ -366,8 +349,11 @@ void App::UpdatePanningState(const Vector2& world_mouse_pos)
 void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
+        action_manager.addAction<ComponentsMovedAction>(selected_component_ids, dragging_context.delta);
+		printf("Delta: %f, %f\n", dragging_context.delta.x, dragging_context.delta.y);
         current_mouse_state = Idle;
-        dragging_context = { {0, 0} };
+        dragging_context = { {0, 0}, {0, 0} };
+
         return;
     }
     
@@ -375,6 +361,10 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
         world_mouse_pos.x - dragging_context.initial_mouse_pos.x,
         world_mouse_pos.y - dragging_context.initial_mouse_pos.y
     };
+
+	dragging_context.delta.x += delta.x;
+	dragging_context.delta.y += delta.y;
+
     dragging_context.initial_mouse_pos = world_mouse_pos;
 
     for (int id : selected_component_ids) {
@@ -389,8 +379,9 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
         if (connecting_context.targetPin.ComponentID != -1) {
-            circuit.addWire({ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
-            circuit.set_component_input_wire(connecting_context.targetPin.ComponentID, connecting_context.targetPin.PinIndex, circuit.m_wires.size() - 1);
+            int id = circuit.addWire({ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
+            circuit.set_component_input_wire(connecting_context.targetPin.ComponentID, connecting_context.targetPin.PinIndex, id);
+			action_manager.addAction<WirePlacedAction>(id);
         }
 
         connecting_context = { -1, { -1, -1 } };
@@ -437,6 +428,44 @@ void App::UpdateSelectingState(const Vector2& world_mouse_pos)
     selected_component_ids.clear();
     circuit.selectComponentsInArea(selecting_context.selectionRect, selected_component_ids);
 }
+
+std::vector<NodeInfo> App::getNodeInfo(std::vector<int>& ids)
+{
+	std::vector<NodeInfo> nodes;
+    for (int id : ids) {
+        auto& component = circuit.getComponent(id);
+        NodeInfo node_info = { component.m_component.m_type, {component.rect.x, component.rect.y} };
+        nodes.push_back(node_info);
+    }
+
+    int index = 0;
+    for (int id : ids) {
+
+        auto& component = circuit.getComponent(id);
+        for (int input_wire_id : component.m_component.m_input_wires) {
+            if (input_wire_id == -1) {
+                nodes[index].input_wires.push_back({ -1, 0 });
+                continue;
+            }
+
+            Wire& wire = circuit.getWire(input_wire_id);
+            int source_component_id = wire.input.ComponentID;
+            if (std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id) != selected_component_ids.end()) {
+                int source_index = std::distance(selected_component_ids.begin(), std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id));
+                nodes[index].input_wires.push_back({ source_index, wire.input.PinIndex });
+            }
+            else {
+                nodes[index].input_wires.push_back({ -1, 0 });
+            }
+
+        }
+
+        index++;
+    }
+
+	return nodes;
+}
+
 
 void App::Run()
 {
