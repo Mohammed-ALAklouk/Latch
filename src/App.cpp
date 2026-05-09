@@ -72,6 +72,78 @@ void App::HandleInput()
         selected_component_ids.clear();
         selected_wire_id = -1;
     }
+
+    if (IsKeyDown(KEY_LEFT_CONTROL))
+    {
+        if (IsKeyPressed(KEY_C)) {
+            copy_of_components.clear();
+			Vector2 min = { FLT_MAX, FLT_MAX };
+			Vector2 max = { FLT_MIN, FLT_MIN };
+
+            for (int id : selected_component_ids) {
+                LogicNode component_copy = circuit.getComponent(id);
+                NodeInfo node_info = { component_copy.m_component.m_type, {component_copy.rect.x, component_copy.rect.y} };
+                copy_of_components.push_back(node_info);
+                min.x = std::min(min.x, component_copy.rect.x);
+                min.y = std::min(min.y, component_copy.rect.y);
+                max.x = std::max(max.x, component_copy.rect.x + component_copy.rect.width);
+                max.y = std::max(max.y, component_copy.rect.y + component_copy.rect.height);
+            }
+
+			int index = 0;
+            for (int id : selected_component_ids) {
+                
+				auto& component = circuit.getComponent(id);
+                for (int input_wire_id : component.m_component.m_input_wires) {
+                    if (input_wire_id == -1) {
+                        copy_of_components[index].input_wires.push_back({ -1, 0 });
+						continue;
+					}
+
+                    Wire& wire = circuit.getWire(input_wire_id);
+                    int source_component_id = wire.input.ComponentID;
+                    if (std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id) != selected_component_ids.end()) {
+                        int source_index = std::distance(selected_component_ids.begin(), std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id));
+                        copy_of_components[index].input_wires.push_back({ source_index, wire.input.PinIndex });
+                    }
+                    else {
+                        copy_of_components[index].input_wires.push_back({ -1, 0 });
+					}
+
+                }
+
+				index++;
+            }
+
+			// Center the copied components around origin
+            for (auto& component : copy_of_components) {
+                component.position.x -= min.x + (max.x - min.x) / 2;
+                component.position.y -= min.y + (max.y - min.y) / 2;
+            }
+
+        }
+        if (IsKeyPressed(KEY_V)) {
+            std::vector<int> new_ids;
+			auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+            for (const auto& component : copy_of_components) {
+                int new_id = circuit.addComponent(component.type, { component.position.x + world_mouse_pos.x, component.position.y + world_mouse_pos.y });
+				new_ids.push_back(new_id);
+            }
+
+            for (int i = 0; i < copy_of_components.size(); ++i) {
+                const auto& component = copy_of_components[i];
+                int new_id = new_ids[i];
+                for (const auto& input_wire : component.input_wires) {
+                    if (input_wire.ComponentID != -1) {
+                        int source_new_id = new_ids[input_wire.ComponentID];
+                        circuit.addWire({ source_new_id, input_wire.PinIndex }, { new_id, 0 });
+                    }
+                }
+			}
+
+            selected_component_ids = new_ids;
+		}
+    }
 }
 
 void App::Update(float deltaTime)
@@ -119,10 +191,10 @@ void App::UI()
 
 	if (ImGui::Button(is_simulation_running ? "Stop" : "Run"))
 		is_simulation_running = !is_simulation_running;
-
+    
     if (ImGui::SliderFloat("Ticks per second", &ticks_per_second, 0.5f, 60.0f, "%.1f"))
     {
-        time_since_last_tick = 0.0f; // Reset timer to avoid long wait after changing speed
+        time_since_last_tick = 0.0f; 
 	}
 
 	ImGui::Text(("Ticks: " + std::to_string(number_of_ticks)).c_str());

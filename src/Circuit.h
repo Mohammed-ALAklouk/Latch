@@ -13,10 +13,11 @@ public:
 	void evaluateComponent(Component& component);
 	void draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID) ;
 
-	void addComponent(Component::Type type, Vector2 position) {
+	int addComponent(Component::Type type, Vector2 position) {
 		int id = m_component_ids.getNextId();
 		m_components.push_back(LogicNode(type, position, id));
 		m_component_ids.setIndex(id, m_components.size() - 1);
+		return id;
 	}
 
 	void set_component_input_wire(int componentID, int input_index, int wire_ID) {
