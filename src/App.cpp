@@ -51,7 +51,7 @@ void App::HandleInput()
     {
         auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
 		int new_id = circuit.addComponent(selected_component_type, world_mouse_pos);
-        action_manager.addAction<ComponentPlacedAction>(new_id);
+        action_manager.addAction<ComponentPlacedAction>(new_id, NodeInfo{selected_component_type, world_mouse_pos, {}});
         gate_placed = true;
     }
 
@@ -120,12 +120,16 @@ void App::HandleInput()
                 }
 			}
 
-            action_manager.addAction<PasteAction>(new_ids);
+            action_manager.addAction<PasteAction>(new_ids, copy_of_components, world_mouse_pos);
             selected_component_ids = new_ids;
 		}
 
         if (IsKeyPressed(KEY_Z)) 
 			action_manager.undo(circuit);
+
+        if (IsKeyPressed(KEY_Y)) {
+			action_manager.redo(circuit);
+        }
     }
 }
 
@@ -350,8 +354,7 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
         action_manager.addAction<ComponentsMovedAction>(selected_component_ids, dragging_context.delta);
-		printf("Delta: %f, %f\n", dragging_context.delta.x, dragging_context.delta.y);
-        current_mouse_state = Idle;
+		current_mouse_state = Idle;
         dragging_context = { {0, 0}, {0, 0} };
 
         return;
@@ -381,7 +384,7 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
         if (connecting_context.targetPin.ComponentID != -1) {
             int id = circuit.addWire({ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
             circuit.set_component_input_wire(connecting_context.targetPin.ComponentID, connecting_context.targetPin.PinIndex, id);
-			action_manager.addAction<WirePlacedAction>(id);
+			action_manager.addAction<WirePlacedAction>(id, PinRef{ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
         }
 
         connecting_context = { -1, { -1, -1 } };
