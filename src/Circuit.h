@@ -37,6 +37,7 @@ public:
 		input_component.m_component.m_output_wires.push_back(id);
 		m_wires.push_back({ input, output, input_component.m_component.m_output_pin.value, id });
 		m_wire_ids.setIndex(id, m_wires.size() - 1);
+
 		return id;
 	}
 
@@ -107,6 +108,23 @@ public:
 				selectedComponentIDs.push_back(component.id);
 			}
 		}
+	}
+
+	void restoreComponent(int id, NodeInfo nodeInfo) {
+		LogicNode newNode(nodeInfo.type, nodeInfo.position, id);
+
+		for (int i = 0; i < nodeInfo.input_wires.size(); ++i) {
+			if (nodeInfo.input_wires[i].ComponentID == -1) {
+				newNode.m_component.m_input_wires[i] = -1;
+				continue;
+			}
+
+			int wireId = addWire({ nodeInfo.input_wires[i].ComponentID, 0 }, { id, i });
+			newNode.m_component.m_input_wires[i] = wireId;
+		}
+
+		m_components.push_back(newNode);
+		m_component_ids.reuseId(id, m_components.size() - 1);
 	}
 
 

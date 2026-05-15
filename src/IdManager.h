@@ -35,6 +35,16 @@ public:
 		}
 	}
 
+	void reuseId(int id, int index) {
+		if (id >= 0 && id < (int)indices.size()) {
+			indices[id] = index;
+			auto it = std::find(free_ids.begin(), free_ids.end(), id);
+			if (it != free_ids.end()) {
+				free_ids.erase(it);
+			}
+		}
+	}
+
 private:
 	std::vector<int> indices;
 	std::vector<int> free_ids;

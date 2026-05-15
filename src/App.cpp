@@ -62,7 +62,7 @@ void App::HandleInput()
 		circuit.evaluate();
 
     if (IsKeyPressed(KEY_DELETE)) {
-        action_manager.addAction<ComponentsDeletedAction>(getNodeInfo(selected_component_ids));
+        action_manager.addAction<ComponentsDeletedAction>(getNodeInfo(selected_component_ids), selected_component_ids);
 		
         for (int id : selected_component_ids) {
             circuit.removeComponent(id);
@@ -124,8 +124,9 @@ void App::HandleInput()
             selected_component_ids = new_ids;
 		}
 
-        if (IsKeyPressed(KEY_Z)) 
+        if (IsKeyPressed(KEY_Z)) {
 			action_manager.undo(circuit);
+        }
 
         if (IsKeyPressed(KEY_Y)) {
 			action_manager.redo(circuit);
@@ -187,6 +188,22 @@ void App::UI()
 	ImGui::Text(("Ticks: " + std::to_string(number_of_ticks)).c_str());
 
 	ImGui::End();
+
+	ImGui::Begin("Selected Component Info");
+	
+	if (selected_component_ids.size() == 1) {
+		int componentID = selected_component_ids[0];
+		auto& component = circuit.getComponent(componentID);
+		ImGui::Text(("Component ID: " + std::to_string(componentID)).c_str());
+		ImGui::Text(("Type: " + std::to_string(static_cast<int>(component.m_component.m_type))).c_str());
+		ImGui::Text(("Position: (" + std::to_string(component.rect.x) + ", " + std::to_string(component.rect.y) + ")").c_str());
+		ImGui::Text("Input Wires:");
+		for (int i = 0; i < component.m_component.m_input_wires.size(); ++i) {
+			ImGui::Text(("  Input " + std::to_string(i) + ": " + std::to_string(component.m_component.m_input_wires[i])).c_str());
+		}
+	}
+    
+    ImGui::End();
 
     rlImGuiEnd();
 }

@@ -20,12 +20,7 @@ class ComponentPlacedAction : public Action {
 	}
 
 	void redo(Circuit& circuit) override {
-		int newID = circuit.addComponent(nodeInfo.type, nodeInfo.position);
-		for (const auto& input_wire : nodeInfo.input_wires) {
-			if (input_wire.ComponentID != -1) {
-				circuit.addWire({ input_wire.ComponentID, input_wire.PinIndex }, { newID, 0 });
-			}
-		}
+		circuit.restoreComponent(componentID, nodeInfo);
 	}
 
 	int componentID;
@@ -72,31 +67,21 @@ class ComponentsMovedAction : public Action {
 
 class ComponentsDeletedAction : public Action {
 	public:
-		ComponentsDeletedAction(std::vector<NodeInfo> nodesInfo) : nodeInfo(nodesInfo){}
+		ComponentsDeletedAction(std::vector<NodeInfo> nodesInfo, std::vector<int> IDs) : nodeInfo(nodesInfo), IDs(IDs) {}
 	void undo(Circuit& circuit) override {
-		newIDs.clear();
 		for (size_t i = 0; i < nodeInfo.size(); ++i) {
-			int newID = circuit.addComponent(nodeInfo[i].type, nodeInfo[i].position);
-			newIDs.push_back(newID);
-		}
-
-		for (size_t i = 0; i < nodeInfo.size(); ++i) {
-			for (const auto& input_wire : nodeInfo[i].input_wires) {
-				if (input_wire.ComponentID != -1) {
-					circuit.addWire({ newIDs[input_wire.ComponentID], input_wire.PinIndex }, { newIDs[i], 0 });
-				}
-			}
+			circuit.restoreComponent(IDs[i], nodeInfo[i]);
 		}
 	}
 
 	void redo(Circuit& circuit) override {
-		for (const auto& id : newIDs) {
+		for (const auto& id : IDs) {
 			circuit.removeComponent(id);
 		}
 	}
 
 	std::vector<NodeInfo> nodeInfo;
-	std::vector<int> newIDs;
+	std::vector<int> IDs;
 };
 
 class WireDeletedAction : public Action {
@@ -117,7 +102,12 @@ class WireDeletedAction : public Action {
 
 class PasteAction : public Action {
 	public:
-	PasteAction(std::vector<int> ids, std::vector<NodeInfo>& nodesInfo, Vector2 translation) : ids(ids), nodesInfo(nodesInfo), translation(translation) {}
+	PasteAction(std::vector<int> ids, std::vector<NodeInfo>& nodesInfo, Vector2 translation) : ids(ids), nodesInfo(nodesInfo), translation(translation) {
+		for (size_t i = 0; i < nodesInfo.size(); ++i) {
+			nodesInfo[i].position.x += translation.x;
+			nodesInfo[i].position.y += translation.y;
+		}
+	}
 	void undo(Circuit& circuit) override {
 		for (const auto& id : ids) {
 			circuit.removeComponent(id);
@@ -125,18 +115,8 @@ class PasteAction : public Action {
 	}
 
 	void redo(Circuit& circuit) override {
-		ids.clear();
 		for (size_t i = 0; i < nodesInfo.size(); ++i) {
-			Vector2 position = { nodesInfo[i].position.x + translation.x, nodesInfo[i].position.y + translation.y };
-			int newID = circuit.addComponent(nodesInfo[i].type, position);
-			ids.push_back(newID);
-		}
-		for (size_t i = 0; i < nodesInfo.size(); ++i) {
-			for (const auto& input_wire : nodesInfo[i].input_wires) {
-				if (input_wire.ComponentID != -1) {
-					circuit.addWire({ ids[input_wire.ComponentID], input_wire.PinIndex }, { ids[i], 0 });
-				}
-			}
+			circuit.restoreComponent(ids[i], nodesInfo[i]);
 		}
 	}
 
