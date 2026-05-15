@@ -3,8 +3,8 @@
 
 struct Wire 
 {
-	PinRef input;
-	PinRef output;
-	LogicLevel value;
-	int id;
+	PinRef Source;
+	PinRef Destination;
+	LogicLevel Value;
+	int ID;
 };

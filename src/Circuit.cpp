@@ -4,7 +4,7 @@ void Circuit::evaluate()
 {
 	for (auto& wire : m_wires)
 	{
-		wire.value = getComponent(wire.input.ComponentID).m_component.m_output_pin.value;
+		wire.Value = getComponent(wire.Source.ComponentID).m_component.m_output_pin.value;
 	}
 	
 	for (auto& component : m_components)
@@ -26,7 +26,7 @@ void Circuit::evaluateComponent(Component& component)
 		}
 
 
-		input_values.push_back(getWire(wire_id).value);
+		input_values.push_back(getWire(wire_id).Value);
 	}
 
 	component.evaluate(input_values);
@@ -43,7 +43,7 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 					inputs.push_back(LogicLevel::UNDEFINED);
 				}
 				else {
-					inputs.push_back(getWire(wire_id).value);
+					inputs.push_back(getWire(wire_id).Value);
 				}
 			}
 
@@ -53,9 +53,9 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 		}
 
 		for (const auto& wire : m_wires) {
-			auto start = getComponent(wire.input.ComponentID).getOutputPosition();
-			auto end = getComponent(wire.output.ComponentID).getInputPosition(wire.output.PinIndex);
-			DrawLineEx(start, end, 3, LogicLevelColors[wire.value]);
+			auto start = getComponent(wire.Source.ComponentID).getOutputPosition();
+			auto end = getComponent(wire.Destination.ComponentID).getInputPosition(wire.Destination.PinIndex);
+			DrawLineEx(start, end, 3, LogicLevelColors[wire.Value]);
 		}
 	}
 }
@@ -113,12 +113,12 @@ void Circuit::removeWire(int id)
 	int index = m_wire_ids.getIndex(id);
 	if (index != -1) {
 		auto& wire = getWire(id);
-		auto& input_component = getComponent(wire.input.ComponentID);
+		auto& input_component = getComponent(wire.Source.ComponentID);
 		input_component.m_component.m_output_wires.erase(
 			std::remove(input_component.m_component.m_output_wires.begin(), input_component.m_component.m_output_wires.end(), id),
 			input_component.m_component.m_output_wires.end());
 
-		auto& output_component = getComponent(wire.output.ComponentID);
+		auto& output_component = getComponent(wire.Destination.ComponentID);
 		for (auto& input_wire_id : output_component.m_component.m_input_wires) {
 			if (input_wire_id == id) {
 				input_wire_id = -1;
@@ -129,7 +129,7 @@ void Circuit::removeWire(int id)
 		int lastIndex = (int)m_wires.size() - 1;
 		if (index != lastIndex) {
 			std::swap(m_wires[index], m_wires[lastIndex]);
-			m_wire_ids.setIndex(m_wires[index].id, index);
+			m_wire_ids.setIndex(m_wires[index].ID, index);
 		}
 
 		m_wires.pop_back();

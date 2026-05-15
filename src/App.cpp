@@ -475,7 +475,7 @@ std::vector<NodeInfo> App::getNodeInfo(std::vector<int>& ids)
             }
 
             Wire& wire = circuit.getWire(input_wire_id);
-            int source_component_id = wire.input.ComponentID;
+            int source_component_id = wire.Source.ComponentID;
             if (std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id) != selected_component_ids.end()) {
                 int source_index = std::distance(selected_component_ids.begin(), std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id));
                 nodes[index].input_components.push_back(source_index);
@@ -505,7 +505,7 @@ std::vector<NodeInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
             }
 
             Wire& wire = circuit.getWire(input_wire_id);
-            int source_component_id = wire.input.ComponentID;
+            int source_component_id = wire.Source.ComponentID;
             input_component_ids.push_back(source_component_id);
 		}
 
