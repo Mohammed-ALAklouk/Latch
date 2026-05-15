@@ -1,7 +1,7 @@
 #pragma once
 #include <raylib.h>
 
-static Color LogicLevelColors[] = {
+inline Color LogicLevelColors[] = {
 	{60, 60, 60, 255}, // LOW
 	{0, 220, 80, 255}, // HIGH
 	{255, 150, 0, 255} // UNDEFINED
