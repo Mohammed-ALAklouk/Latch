@@ -143,7 +143,7 @@ void App::HandleInput()
 void App::Update(float deltaTime)
 {
 	auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
-	auto mouse_state_update = mouse_state_update_functions[current_mouse_state];
+	auto mouse_state_update = mouse_state_update_functions[static_cast<int>(current_mouse_state)];
 	(this->*mouse_state_update)(world_mouse_pos);
 
     if (is_simulation_running)
@@ -191,7 +191,7 @@ void App::UI()
         time_since_last_tick = 0.0f; 
 	}
 
-	ImGui::Text(("Ticks: " + std::to_string(number_of_ticks)).c_str());
+	ImGui::Text("Ticks: %d", number_of_ticks);
 
 	ImGui::End();
 
@@ -200,12 +200,12 @@ void App::UI()
 	if (selected_component_ids.size() == 1) {
 		int componentID = selected_component_ids[0];
 		auto& component = circuit.getComponent(componentID);
-		ImGui::Text(("Component ID: " + std::to_string(componentID)).c_str());
-		ImGui::Text(("Type: " + std::to_string(static_cast<int>(component.m_component.m_type))).c_str());
-		ImGui::Text(("Position: (" + std::to_string(component.rect.x) + ", " + std::to_string(component.rect.y) + ")").c_str());
+		ImGui::Text("Component ID: %d", componentID);
+		ImGui::Text("Type: %d", static_cast<int>(component.m_component.m_type));
+		ImGui::Text("Position: (%.2f, %.2f)", component.rect.x, component.rect.y);
 		ImGui::Text("Input Wires:");
 		for (int i = 0; i < component.m_component.m_input_wires.size(); ++i) {
-			ImGui::Text(("  Input " + std::to_string(i) + ": " + std::to_string(component.m_component.m_input_wires[i])).c_str());
+			ImGui::Text("  Input %d: %d", i, component.m_component.m_input_wires[i]);
 		}
 	}
     
@@ -225,7 +225,7 @@ void App::Draw()
 
 	circuit.draw(selected_component_ids, hovered_component_id);
 
-    if (current_mouse_state == Connecting)
+    if (current_mouse_state == MouseState::Connecting)
     {
 		auto& inputComponent = circuit.getComponent(connecting_context.sourceComponentID);
         Vector2 start = inputComponent.getOutputPosition();
@@ -233,14 +233,14 @@ void App::Draw()
 
         DrawLineEx(start, end, 3, LogicLevelColors[inputComponent.m_component.m_output_pin.value]);
     }
-    else if (current_mouse_state == Selecting)
+    else if (current_mouse_state == MouseState::Selecting)
     {
 		DrawRectangleRec(selecting_context.selectionRect, { 255, 0, 0, 50 });
         DrawRectangleLinesEx(selecting_context.selectionRect, 2, RED);
     }
 
 	auto top_left = GetScreenToWorld2D({ 0, 0 }, camera);
-    std::string state_text = mouse_state_names[current_mouse_state];
+    std::string state_text = mouse_state_names[static_cast<int>(current_mouse_state)];
     DrawText(("State: " + state_text).c_str(), top_left.x, top_left.y, 20, RED);
 
     EndMode2D();
@@ -263,7 +263,7 @@ void App::DrawGrid() const
 
         Color color = isMajor ? darkTheme.gridMajor : darkTheme.gridMinor;
 
-        float baseThickness = isMajor ? grid_line_major_thinkness : grid_line_minor_thinkness;
+        float baseThickness = isMajor ? grid_line_major_thickness : grid_line_minor_thickness;
         float adjustedThickness = (baseThickness / camera.zoom);
         if (adjustedThickness < 1.0f / camera.zoom) adjustedThickness = 1.0f / camera.zoom;
 
@@ -276,7 +276,7 @@ void App::DrawGrid() const
 
         Color color = isMajor ? darkTheme.gridMajor : darkTheme.gridMinor;
 
-        float baseThickness = isMajor ? grid_line_major_thinkness : grid_line_minor_thinkness;
+        float baseThickness = isMajor ? grid_line_major_thickness : grid_line_minor_thickness;
         float adjustedThickness = (baseThickness / camera.zoom);
         if (adjustedThickness < 1.0f / camera.zoom) adjustedThickness = 1.0f / camera.zoom;
 
@@ -293,7 +293,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         {
             selecting_context.selectionStart = world_mouse_pos;
             selecting_context.selectionEnd = world_mouse_pos;
-            current_mouse_state = Selecting;
+            current_mouse_state = MouseState::Selecting;
             return;
         }
 
@@ -301,12 +301,12 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         bool clicked_on_input_pin = false;
         bool clicked_on_component = false;
 
-        for (auto& Component : circuit.m_components) {
-            if (Component.outputPinContainsPoint(world_mouse_pos))
+        for (auto& component : circuit.m_components) {
+            if (component.outputPinContainsPoint(world_mouse_pos))
             {
-                connecting_context.sourceComponentID = Component.id;
+                connecting_context.sourceComponentID = component.id;
                 connecting_context.targetPin = { 0, 0 };
-                current_mouse_state = Connecting;
+                current_mouse_state = MouseState::Connecting;
                 clicked_on_input_pin = true;
                 break;
             }
@@ -317,7 +317,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 
         for (auto& component : circuit.m_components) {
             if (component.containsPoint(world_mouse_pos)) {
-                current_mouse_state = Dragging;
+                current_mouse_state = MouseState::Dragging;
                 dragging_context.initial_mouse_pos = world_mouse_pos;
                 clicked_on_component = true;
 
@@ -335,7 +335,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 
         selected_component_ids.clear();
         selected_wire_id = -1;
-        current_mouse_state = Panning;
+        current_mouse_state = MouseState::Panning;
         panning_context.initial_pos = GetMousePosition();
         panning_context.initial_camera_target = camera.target;
     }
@@ -355,7 +355,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 void App::UpdatePanningState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
-        current_mouse_state = Idle;
+        current_mouse_state = MouseState::Idle;
         panning_context = { {0, 0}, {0, 0} };
         return;
     }
@@ -377,7 +377,7 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
         action_manager.addAction<ComponentsMovedAction>(selected_component_ids, dragging_context.delta);
-		current_mouse_state = Idle;
+		current_mouse_state = MouseState::Idle;
         dragging_context = { {0, 0}, {0, 0} };
 
         return;
@@ -411,7 +411,7 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
         }
 
         connecting_context = { -1, { -1, -1 } };
-        current_mouse_state = Idle;
+        current_mouse_state = MouseState::Idle;
         return;
     }
 
@@ -433,7 +433,7 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 void App::UpdateSelectingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
-        current_mouse_state = Idle;
+        current_mouse_state = MouseState::Idle;
         selecting_context = { {0, 0}, {0, 0}, {0, 0, 0, 0} };
         return;
     }

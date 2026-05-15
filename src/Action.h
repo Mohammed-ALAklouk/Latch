@@ -10,6 +10,8 @@ class Action {
 	public:
 	virtual	void undo(Circuit& circuit) = 0;
 	virtual void redo(Circuit& circuit) = 0;
+
+	virtual ~Action() = default;
 };
 
 class ComponentPlacedAction : public Action {

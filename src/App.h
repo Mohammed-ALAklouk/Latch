@@ -67,7 +67,7 @@ private:
 	int window_width = 800;
 	int window_height = 450;
 
-	typedef enum { Idle, Panning, Dragging, Connecting, Selecting } MouseState;
+	enum class MouseState { Idle, Panning, Dragging, Connecting, Selecting } ;
 
 	void(App::* mouse_state_update_functions[5])(const Vector2& mouse_pos) = {
 		&App::UpdateIdleState,
@@ -83,7 +83,7 @@ private:
 	const float zoom_levels[6] = { 0.33f, 0.45f, 0.60f, 0.75f, 0.90f, 1.00f };
 	int current_zoom_index = 5; 
 
-	MouseState current_mouse_state = Idle;
+	MouseState current_mouse_state = MouseState::Idle;
 	Component::Type selected_component_type = Component::Type::AND;
 
 	PanningContext panning_context;
@@ -97,8 +97,8 @@ private:
 	bool space_was_pressed = false;
 
 	int major_step = 5;
-	float grid_line_minor_thinkness = 0.8f;
-	float grid_line_major_thinkness = 1.5f;
+	float grid_line_minor_thickness = 0.8f;
+	float grid_line_major_thickness = 1.5f;
 
 	std::vector <int> selected_component_ids;
 	int hovered_component_id = -1;

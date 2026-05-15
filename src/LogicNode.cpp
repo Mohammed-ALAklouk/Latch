@@ -19,9 +19,7 @@ void LogicNode::draw(std::vector<LogicLevel> inputs, bool selected, bool highlig
 	DrawText(label, (int)tx, (int)ty, 12, WHITE);
 
 	DrawCircle(getOutputPosition().x, getOutputPosition().y, PIN_RADIUS, LogicLevelColors[m_component.m_output_pin.value]);
-	float midY = rect.y + rect.height / 2;
-	float spacing = 20;
-
+	
 	for (int i = 0; i < inputs.size(); i++) {
 		Vector2 inputPosition = getInputPosition(i);
 		DrawCircle(inputPosition.x, inputPosition.y, PIN_RADIUS, LogicLevelColors[inputs[i]]);
