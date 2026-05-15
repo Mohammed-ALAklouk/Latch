@@ -55,13 +55,12 @@ public:
 		int index = m_component_ids.getIndex(id);
 		if (index != -1) {
 			auto& component = getComponent(id);
-			for (int input_wire_id : component.m_component.m_input_wires) {
-				removeWire(input_wire_id);
-			}
-
-			for (int output_wire_id : component.m_component.m_output_wires) {
-				removeWire(output_wire_id);
-			}
+			auto input_wires_copy = component.m_component.m_input_wires;
+			
+			for (int id : input_wires_copy) removeWire(id);
+			
+			auto output_wires_copy = component.m_component.m_output_wires;
+			for (int id : output_wires_copy) removeWire(id);
 
 			int lastIndex = (int)m_components.size() - 1;
 			if (index != lastIndex) {
