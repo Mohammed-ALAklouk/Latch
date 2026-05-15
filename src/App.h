@@ -60,6 +60,7 @@ private:
 	void UpdateConnectingState(const Vector2& mouse_pos);
 	void UpdateSelectingState(const Vector2& mouse_pos);
 	std::vector<NodeInfo> getNodeInfo(std::vector<int>& ids);
+	std::vector<NodeInfo> getNodeInfoDeletion(std::vector<int>& ids);
 
 	
 	int cell_size = 20;

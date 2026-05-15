@@ -8,7 +8,7 @@
 struct NodeInfo {
 	Component::Type type;
 	Vector2 position;
-	std::vector<PinRef> input_wires;
+	std::vector<int> input_components;
 };
 
 
@@ -113,13 +113,13 @@ public:
 	void restoreComponent(int id, NodeInfo nodeInfo) {
 		LogicNode newNode(nodeInfo.type, nodeInfo.position, id);
 
-		for (int i = 0; i < nodeInfo.input_wires.size(); ++i) {
-			if (nodeInfo.input_wires[i].ComponentID == -1) {
+		for (int i = 0; i < nodeInfo.input_components.size(); ++i) {
+			if (nodeInfo.input_components[i] == -1) {
 				newNode.m_component.m_input_wires[i] = -1;
 				continue;
 			}
 
-			int wireId = addWire({ nodeInfo.input_wires[i].ComponentID, 0 }, { id, i });
+			int wireId = addWire({ nodeInfo.input_components[i], 0 }, { id, i });
 			newNode.m_component.m_input_wires[i] = wireId;
 		}
 

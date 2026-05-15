@@ -66,8 +66,8 @@ class ComponentsMovedAction : public Action {
 };
 
 class ComponentsDeletedAction : public Action {
-	public:
-		ComponentsDeletedAction(std::vector<NodeInfo> nodesInfo, std::vector<int> IDs) : nodeInfo(nodesInfo), IDs(IDs) {}
+public:
+	ComponentsDeletedAction(std::vector<NodeInfo> nodesInfo, std::vector<int> IDs) : nodeInfo(nodesInfo), IDs(IDs) {}
 	void undo(Circuit& circuit) override {
 		for (size_t i = 0; i < nodeInfo.size(); ++i) {
 			circuit.restoreComponent(IDs[i], nodeInfo[i]);
@@ -102,11 +102,8 @@ class WireDeletedAction : public Action {
 
 class PasteAction : public Action {
 	public:
-	PasteAction(std::vector<int> ids, std::vector<NodeInfo>& nodesInfo, Vector2 translation) : ids(ids), nodesInfo(nodesInfo), translation(translation) {
-		for (size_t i = 0; i < nodesInfo.size(); ++i) {
-			nodesInfo[i].position.x += translation.x;
-			nodesInfo[i].position.y += translation.y;
-		}
+	PasteAction(std::vector<int> ids, std::vector<NodeInfo>& nodesInfo) : ids(ids), nodesInfo(nodesInfo) {
+		
 	}
 	void undo(Circuit& circuit) override {
 		for (const auto& id : ids) {
@@ -121,7 +118,6 @@ class PasteAction : public Action {
 	}
 
 	std::vector<NodeInfo> nodesInfo;
-	Vector2 translation;
 	std::vector<int> ids;
 };
 
