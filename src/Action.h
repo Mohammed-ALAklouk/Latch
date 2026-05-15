@@ -125,11 +125,9 @@ class ActionManager {
 	public:
 	template <typename T, typename... Args>
 	void addAction(Args&&... args) {
+		actions.erase(actions.begin() + currentIndex + 1, actions.end());
 		actions.push_back(std::make_unique<T>(std::forward<Args>(args)...));
 		++currentIndex;
-		if (currentIndex < static_cast<int>(actions.size()) - 1) {
-			actions.erase(actions.begin() + currentIndex + 1, actions.end());
-		}
 	}
 
 	void undo(Circuit& circuit) {
