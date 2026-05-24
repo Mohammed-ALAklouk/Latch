@@ -1,12 +1,11 @@
 #include "Component.h"
 
 Component Component::BaseComponents[]{
-		Component(Type::AND, "AND", { -1, -1 }, Pin()),
-		Component(Type::OR, "OR", { -1, -1 }, Pin()),
-		Component(Type::NOT, "NOT", { -1 }, Pin()),
-		Component(Type::HIGH, "HIGH", {}, Pin(LogicLevel::HIGH)),
-		Component(Type::LOW, "LOW", {}, Pin(LogicLevel::LOW))
-
+		Component(NodeInfo::Type::AND, "AND", { -1, -1 }, Pin()),
+		Component(NodeInfo::Type::OR, "OR", { -1, -1 }, Pin()),
+		Component(NodeInfo::Type::NOT, "NOT", { -1 }, Pin()),
+		Component(NodeInfo::Type::HIGH, "HIGH", {}, Pin(LogicLevel::HIGH)),
+		Component(NodeInfo::Type::LOW, "LOW", {}, Pin(LogicLevel::LOW))
 };
 
 LogicLevel Component::AndLookupTable[9] = {

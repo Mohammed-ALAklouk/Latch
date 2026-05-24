@@ -1,21 +1,20 @@
 #pragma once
 #include <vector>
-#include "Component.h"
+#include <memory>
+#include "Gate.h"
 #include "Wire.h"
-#include "LogicNode.h"
-#include "NodeInfo.h"
 #include "IdManager.h"
 
 
 
 
-class Circuit
+class NewCircuit
 {
 public:
 
 	void evaluate();
-	void evaluateComponent(Component& component);
-	void draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID) ;
+	void evaluateComponent(std::unique_ptr<Gate>& component);
+	void draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID);
 	int addComponent(NodeInfo::Type type, Vector2 position);
 	void set_component_input_wire(int componentID, int input_index, int wire_ID);
 	int addWire(PinRef input, PinRef output);
@@ -24,8 +23,8 @@ public:
 	void selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const;
 	void restoreComponent(int id, NodeInfo nodeInfo);
 
-	LogicNode& getComponent(int id) {
-		int index = m_component_ids.getIndex(id);	
+	std::unique_ptr<Gate>& getComponent(int id) {
+		int index = m_component_ids.getIndex(id);
 		return m_components[index];
 	}
 
@@ -34,7 +33,7 @@ public:
 		return m_wires[index];
 	}
 
-	std::vector<LogicNode> m_components;
+	std::vector<std::unique_ptr<Gate>> m_components;
 	std::vector<Wire> m_wires;
 	IdManager m_component_ids;
 	IdManager m_wire_ids;

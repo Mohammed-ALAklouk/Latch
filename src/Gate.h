@@ -1,0 +1,242 @@
+#pragma once
+#include <vector>
+#include "Pin.h"
+#include "NodeInfo.h"
+
+
+class Gate {
+public:
+	Gate() = delete;
+	Gate(int id, Vector2 position)
+		: m_id(id), m_rect({ position.x, position.y, 0, 0 })	{	}
+	virtual ~Gate() = default;
+
+	bool containsPoint(Vector2 point) const {
+		return CheckCollisionPointRec(point, m_rect);
+	}
+
+	int getInputWireId(int input_index) const {
+		if (input_index < 0 || input_index >= m_inputWireIds.size()) return -1;
+		return m_inputWireIds[input_index];
+	}
+
+	virtual int inputPinsContainPoint(Vector2 point) const;
+	virtual int outputPinContainsPoint(Vector2 point) const;
+
+	virtual void evaluate(const std::vector<LogicLevel>& inputs) = 0;
+	virtual void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const = 0;
+	virtual char* getLabel() const = 0;
+	virtual NodeInfo::Type getNodeInfoType() const = 0;
+	virtual Vector2 getInputPosition(int input_index) const = 0;
+	virtual Vector2 getOutputPosition(int output_index = 0) const = 0;
+
+
+	constexpr static float PinRadius = 5.0f;
+	constexpr static Color LogicLevelColors[] = {
+		{60, 60, 60, 255}, // LOW
+		{0, 220, 80, 255}, // HIGH
+		{255, 150, 0, 255} // UNDEFINED
+	};
+
+	Rectangle m_rect;
+	Color body_top = { 45, 50, 62, 255 };
+	Color body_bot = { 32, 36, 46, 255 };
+	Color AccentColor{ 0, 180, 120, 255 };
+	Color BorderColor{ 80, 85, 95, 255 };
+	Color BorderHighlightColor{ 100, 160, 255, 255 };
+	Color BorderSelectedColor{ 0, 150, 255, 255 };
+
+	std::vector<int> m_inputWireIds;
+	std::vector<int> m_outputWireIds;
+	std::vector<LogicLevel> m_outputValues;
+	int m_id;
+};
+
+class AndGate : public Gate {
+public:
+	constexpr static LogicLevel LookupTable[9] = {
+		//		LOW				HIGH				UNDEFINED
+		LogicLevel::LOW, LogicLevel::LOW,		LogicLevel::LOW, // LOW
+		LogicLevel::LOW, LogicLevel::HIGH,		LogicLevel::UNDEFINED, // HIGH
+		LogicLevel::LOW, LogicLevel::UNDEFINED,	LogicLevel::UNDEFINED // UNDEFINED
+	};
+
+	AndGate(int id, Vector2 position) : Gate(id, position)
+	{
+		m_rect.width = 80;
+		m_rect.height = 60;
+		m_inputWireIds.resize(2, -1);
+		m_outputWireIds.resize(1, -1);
+		m_outputValues.resize(1, LogicLevel::UNDEFINED);
+	}
+
+	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
+	void evaluate(const std::vector<LogicLevel>& inputs) override{
+		if (inputs.size() < 2) {
+			m_outputValues[0] = LogicLevel::UNDEFINED;
+			return;
+		}
+
+		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
+	}
+	
+	char* getLabel() const override { return "AND"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::AND; }
+
+	Vector2 getInputPosition(int input_index) const override
+	{
+		float y = m_rect.y + m_rect.height / (m_inputWireIds.size() + 1) * (input_index + 1);
+		return { m_rect.x, y };
+	}
+
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width, m_rect.y + m_rect.height / 2 };
+	}
+};
+
+class OrGate : public Gate {
+public:
+	constexpr static LogicLevel LookupTable[9] = {
+		//		LOW					HIGH				UNDEFINED
+		LogicLevel::LOW,		LogicLevel::HIGH,	LogicLevel::UNDEFINED, // LOW
+		LogicLevel::HIGH,		LogicLevel::HIGH,	LogicLevel::HIGH, // HIGH
+		LogicLevel::UNDEFINED,	LogicLevel::HIGH,	LogicLevel::UNDEFINED // UNDEFINED
+	};
+
+	OrGate(int id, Vector2 position) : Gate(id, position)
+	{
+		m_rect.width = 60;
+		m_rect.height = 40;
+		m_inputWireIds.resize(2, -1);
+		m_outputWireIds.resize(1, -1);
+		m_outputValues.resize(1, LogicLevel::UNDEFINED);
+	}
+	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
+	void evaluate(const std::vector<LogicLevel>& inputs) override{
+		if (inputs.size() < 2) {
+			m_outputValues[0] = LogicLevel::UNDEFINED;
+			return;
+		}
+		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
+	}
+
+
+	char* getLabel() const override { return "OR"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::OR; }
+	Vector2 getInputPosition(int input_index) const override
+	{
+		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
+		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+};
+
+class NotGate : public Gate {
+	public:
+	constexpr static LogicLevel LookupTable[3] = {
+		LogicLevel::HIGH, // LOW
+		LogicLevel::LOW,  // HIGH
+		LogicLevel::UNDEFINED // UNDEFINED
+	};
+	NotGate(int id, Vector2 position) : Gate(id, position)
+	{
+		m_rect.width = 80;
+		m_rect.height = 60;
+		m_inputWireIds.resize(1, -1);
+		m_outputWireIds.resize(1, -1);
+		m_outputValues.resize(1, LogicLevel::UNDEFINED);
+	}
+	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
+	void evaluate(const std::vector<LogicLevel>& inputs) override{
+		if (inputs.size() < 1) {
+			m_outputValues[0] = LogicLevel::UNDEFINED;
+			return;
+		}
+		m_outputValues[0] = LookupTable[inputs[0]];
+	}
+
+
+	char* getLabel() const override { return "NOT"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::NOT; }
+	Vector2 getInputPosition(int input_index) const override
+	{
+		return { m_rect.x - PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+};
+
+class HighGate : public Gate {
+public:
+	constexpr static LogicLevel LookupTable[3] = {
+		LogicLevel::HIGH, // LOW
+		LogicLevel::HIGH,  // HIGH
+		LogicLevel::HIGH // UNDEFINED
+	};
+	HighGate(int id, Vector2 position) : Gate(id, position)
+	{
+		m_rect.width = 60;
+		m_rect.height = 40;
+		m_inputWireIds.resize(0);
+		m_outputWireIds.resize(1, -1);
+		m_outputValues.resize(1, LogicLevel::HIGH);
+	}
+	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
+	void evaluate(const std::vector<LogicLevel>& inputs) override{
+		m_outputValues[0] = LogicLevel::HIGH;
+	}
+
+
+	char* getLabel() const override { return "HIGH"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::HIGH; }
+	Vector2 getInputPosition(int input_index) const override
+	{
+		return { 0, 0 }; // No input pins
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+
+	int inputPinsContainPoint(Vector2 point) const override {	return false;	}
+};
+
+class LowGate : public Gate {
+public: 
+	constexpr static LogicLevel LookupTable[3] = {
+		LogicLevel::LOW, // LOW
+		LogicLevel::LOW,  // HIGH
+		LogicLevel::LOW // UNDEFINED
+	};
+	LowGate(int id, Vector2 position) : Gate(id, position)
+	{
+		m_rect.width = 60;
+		m_rect.height = 40;
+		m_inputWireIds.resize(0);
+		m_outputWireIds.resize(1, -1);
+		m_outputValues.resize(1, LogicLevel::LOW);
+	}
+	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
+	void evaluate(const std::vector<LogicLevel>& inputs) override{
+		m_outputValues[0] = LogicLevel::LOW;
+	}
+
+	char* getLabel() const override { return "LOW"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::LOW; }
+	Vector2 getInputPosition(int input_index) const override
+	{
+		return { 0, 0 }; // No input pins
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+	int inputPinsContainPoint(Vector2 point) const override { return false; }
+
+};

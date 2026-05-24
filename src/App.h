@@ -9,6 +9,8 @@
 #include "Circuit.h"
 #include "Action.h"
 
+#include "NewCircuit.h"
+
 struct PanningContext {
 	Vector2 initial_pos;
 	Vector2 initial_camera_target;
@@ -59,8 +61,8 @@ private:
 	void UpdateDraggingState(const Vector2& mouse_pos);
 	void UpdateConnectingState(const Vector2& mouse_pos);
 	void UpdateSelectingState(const Vector2& mouse_pos);
-	std::vector<NodeInfo> getNodeInfo(std::vector<int>& ids);
-	std::vector<NodeInfo> getNodeInfoDeletion(std::vector<int>& ids);
+	std::vector<NodeInfo > getNodeInfo(std::vector<int>& ids);
+	std::vector<NodeInfo > getNodeInfoDeletion(std::vector<int>& ids);
 
 	
 	int cell_size = 20;
@@ -84,14 +86,15 @@ private:
 	int current_zoom_index = 5; 
 
 	MouseState current_mouse_state = MouseState::Idle;
-	Component::Type selected_component_type = Component::Type::AND;
+	NodeInfo::Type selected_component_type = NodeInfo::Type::AND;
 
 	PanningContext panning_context;
 	DraggingContext dragging_context;
 	ConnectingContext connecting_context;
 	SelectionContext selecting_context;
 
-	Circuit circuit;
+	//Circuit circuit;
+	NewCircuit circuit;
 
 	bool gate_placed = false;
 	bool space_was_pressed = false;
@@ -109,7 +112,7 @@ private:
 	float time_since_last_tick = 0.0f;
 	int number_of_ticks = 0;
 
-	std::vector<NodeInfo> copy_of_components;
+	std::vector<NodeInfo > copy_of_components;
 	ActionManager action_manager;
 
 

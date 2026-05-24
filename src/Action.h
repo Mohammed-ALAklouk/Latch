@@ -4,12 +4,12 @@
 #include <raylib.h>
 #include <memory>
 #include "Pin.h"
-#include "Circuit.h"
+#include "NewCircuit.h"
 
 class Action {
 	public:
-	virtual	void undo(Circuit& circuit) = 0;
-	virtual void redo(Circuit& circuit) = 0;
+	virtual	void undo(NewCircuit& NewCircuit) = 0;
+	virtual void redo(NewCircuit& NewCircuit) = 0;
 
 	virtual ~Action() = default;
 };
@@ -17,12 +17,12 @@ class Action {
 class ComponentPlacedAction : public Action {
 	public:
 	ComponentPlacedAction(int componentID, NodeInfo nodeInfo) : componentID(componentID), nodeInfo(nodeInfo) {}
-	void undo(Circuit& circuit) override {
-		circuit.removeComponent(componentID);
+	void undo(NewCircuit& NewCircuit) override {
+		NewCircuit.removeComponent(componentID);
 	}
 
-	void redo(Circuit& circuit) override {
-		circuit.restoreComponent(componentID, nodeInfo);
+	void redo(NewCircuit& NewCircuit) override {
+		NewCircuit.restoreComponent(componentID, nodeInfo);
 	}
 
 	int componentID;
@@ -34,11 +34,11 @@ class ComponentPlacedAction : public Action {
 class WirePlacedAction : public Action {
 	public:
 	WirePlacedAction(int wireID, PinRef input, PinRef output) : wireID(wireID), input(input), output(output) {}
-	void undo(Circuit& circuit) override {
-		circuit.removeWire(wireID);
+	void undo(NewCircuit& NewCircuit) override {
+		NewCircuit.removeWire(wireID);
 	}
-	void redo(Circuit& circuit) override {
-		wireID = circuit.addWire(input, output);
+	void redo(NewCircuit& NewCircuit) override {
+		wireID = NewCircuit.addWire(input, output);
 	}
 
 	int wireID;
@@ -49,18 +49,18 @@ class WirePlacedAction : public Action {
 class ComponentsMovedAction : public Action {
 	public:
 	ComponentsMovedAction(std::vector<int> componentIDs, Vector2 translation) : componentIDs(componentIDs), translation(translation) {}
-	void undo(Circuit& circuit) override {
+	void undo(NewCircuit& NewCircuit) override {
 		for (const auto& componentID : componentIDs) {
-			auto& component = circuit.getComponent(componentID);
-			component.rect.x -= translation.x;
-			component.rect.y -= translation.y;
+			auto& component = NewCircuit.getComponent(componentID);
+			component->m_rect.x -= translation.x;
+			component->m_rect.y -= translation.y;
 		}
 	}
-	void redo(Circuit& circuit) override {
+	void redo(NewCircuit& NewCircuit) override {
 		for (const auto& componentID : componentIDs) {
-			auto& component = circuit.getComponent(componentID);
-			component.rect.x += translation.x;
-			component.rect.y += translation.y;
+			auto& component = NewCircuit.getComponent(componentID);
+			component->m_rect.x += translation.x;
+			component->m_rect.y += translation.y;
 		}
 	}
 	std::vector<int> componentIDs;
@@ -70,15 +70,15 @@ class ComponentsMovedAction : public Action {
 class ComponentsDeletedAction : public Action {
 public:
 	ComponentsDeletedAction(std::vector<NodeInfo> nodesInfo, std::vector<int> IDs) : nodeInfo(nodesInfo), IDs(IDs) {}
-	void undo(Circuit& circuit) override {
+	void undo(NewCircuit& NewCircuit) override {
 		for (size_t i = 0; i < nodeInfo.size(); ++i) {
-			circuit.restoreComponent(IDs[i], nodeInfo[i]);
+			NewCircuit.restoreComponent(IDs[i], nodeInfo[i]);
 		}
 	}
 
-	void redo(Circuit& circuit) override {
+	void redo(NewCircuit& NewCircuit) override {
 		for (const auto& id : IDs) {
-			circuit.removeComponent(id);
+			NewCircuit.removeComponent(id);
 		}
 	}
 
@@ -89,12 +89,12 @@ public:
 class WireDeletedAction : public Action {
 	public:
 	WireDeletedAction(PinRef input, PinRef output, int wireID) : input(input), output(output), wireID(wireID) {}
-	void undo(Circuit& circuit) override {
-		wireID = circuit.addWire(input, output);
+	void undo(NewCircuit& NewCircuit) override {
+		wireID = NewCircuit.addWire(input, output);
 	}
 
-	void redo(Circuit& circuit) override {
-		circuit.removeWire(wireID);
+	void redo(NewCircuit& NewCircuit) override {
+		NewCircuit.removeWire(wireID);
 	}
 
 	PinRef input;
@@ -107,15 +107,15 @@ class PasteAction : public Action {
 	PasteAction(std::vector<int> ids, std::vector<NodeInfo>& nodesInfo) : ids(ids), nodesInfo(nodesInfo) {
 		
 	}
-	void undo(Circuit& circuit) override {
+	void undo(NewCircuit& NewCircuit) override {
 		for (const auto& id : ids) {
-			circuit.removeComponent(id);
+			NewCircuit.removeComponent(id);
 		}
 	}
 
-	void redo(Circuit& circuit) override {
+	void redo(NewCircuit& NewCircuit) override {
 		for (size_t i = 0; i < nodesInfo.size(); ++i) {
-			circuit.restoreComponent(ids[i], nodesInfo[i]);
+			NewCircuit.restoreComponent(ids[i], nodesInfo[i]);
 		}
 	}
 
@@ -132,17 +132,17 @@ class ActionManager {
 		++currentIndex;
 	}
 
-	void undo(Circuit& circuit) {
+	void undo(NewCircuit& NewCircuit) {
 		if (currentIndex < 0) return;
 		Action* lastAction = actions[currentIndex].get();
-		lastAction->undo(circuit);
+		lastAction->undo(NewCircuit);
 		--currentIndex;
 	}
 	
-	void redo(Circuit& circuit) {
+	void redo(NewCircuit& NewCircuit) {
 		if (currentIndex + 1 >= static_cast<int>(actions.size())) return;
 		Action* nextAction = actions[currentIndex + 1].get();
-		nextAction->redo(circuit);
+		nextAction->redo(NewCircuit);
 		++currentIndex;
 	}
 

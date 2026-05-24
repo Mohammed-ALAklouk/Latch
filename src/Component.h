@@ -2,23 +2,16 @@
 #include <vector>
 #include <string>
 #include "Pin.h"
+#include "NodeInfo.h"
 
 class Component
 {
 public:
-	enum Type
-	{
-		AND,
-		OR,
-		NOT,
-		HIGH,
-		LOW,
-		COMPONENT_COUNT
-	};
+	
 
 private:
 
-	Component(Type type, std::string name, std::vector<int> input_wires, Pin output_pin)
+	Component(NodeInfo::Type type, std::string name, std::vector<int> input_wires, Pin output_pin)
 		: m_type(type), m_name(name), m_input_wires(input_wires), m_output_pin(output_pin)
 	{
 	}
@@ -26,7 +19,7 @@ private:
 	static LogicLevel* LookupTables[];
 	static Component BaseComponents[];
 
-	static LogicLevel lookup2D(Type type, LogicLevel input1, LogicLevel input2) {
+	static LogicLevel lookup2D(NodeInfo::Type type, LogicLevel input1, LogicLevel input2) {
 		return LookupTables[type][input1 * 3 + input2];
 	}
 
@@ -37,7 +30,7 @@ private:
 	static LogicLevel LowLookupTable[3];
 public:
 
-	Component(Type type)
+	Component(NodeInfo::Type type)
 	{
 		*this = BaseComponents[static_cast<int>(type)];	
 	}
@@ -45,13 +38,13 @@ public:
 	void evaluate(std::vector<LogicLevel>& input_values) {
 		switch (m_type)
 		{
-		case Type::NOT:
+		case NodeInfo::Type::NOT:
 			m_output_pin.value = LookupTables[m_type][input_values[0]];
 			break;
-		case Type::HIGH:
+		case NodeInfo::Type::HIGH:
 			m_output_pin.value = LookupTables[m_type][0];
 			break;
-		case Type::LOW:
+		case NodeInfo::Type::LOW:
 			m_output_pin.value = LookupTables[m_type][0];
 			break;
 		default:
@@ -64,6 +57,6 @@ public:
 	std::vector<int> m_output_wires;
 	Pin m_output_pin;
 	std::string m_name;
-	Type m_type;
+	NodeInfo::Type m_type;
 };
 

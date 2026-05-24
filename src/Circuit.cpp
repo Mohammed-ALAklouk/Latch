@@ -60,7 +60,7 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 	}
 }
 
-int Circuit::addComponent(Component::Type type, Vector2 position)
+int Circuit::addComponent(NodeInfo::Type type, Vector2 position)
 {
 	int id = m_component_ids.getNextId();
 	m_components.push_back(LogicNode(type, position, id));

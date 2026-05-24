@@ -164,16 +164,15 @@ void App::UI()
     ImGui::Begin("Components");
 
     if (ImGui::Button("AND"))
-        selected_component_type = Component::Type::AND;
+        selected_component_type = NodeInfo::Type::AND;
     if (ImGui::Button("OR"))
-        selected_component_type = Component::Type::OR;
+        selected_component_type = NodeInfo::Type::OR;
     if (ImGui::Button("NOT"))
-        selected_component_type = Component::Type::NOT;
+        selected_component_type = NodeInfo::Type::NOT;
     if (ImGui::Button("HIGH"))
-        selected_component_type = Component::Type::HIGH;
+        selected_component_type = NodeInfo::Type::HIGH;
     if (ImGui::Button("LOW"))
-        selected_component_type = Component::Type::LOW;
-
+        selected_component_type = NodeInfo::Type::LOW;
     ImGui::End();
 
 	ImGui::Begin("Simulation");
@@ -201,11 +200,11 @@ void App::UI()
 		int componentID = selected_component_ids[0];
 		auto& component = circuit.getComponent(componentID);
 		ImGui::Text("Component ID: %d", componentID);
-		ImGui::Text("Type: %d", static_cast<int>(component.m_component.m_type));
-		ImGui::Text("Position: (%.2f, %.2f)", component.rect.x, component.rect.y);
+		ImGui::Text("Type: %d", static_cast<int>(component->getNodeInfoType()));
+		ImGui::Text("Position: (%.2f, %.2f)", component->m_rect.x, component->m_rect.y);
 		ImGui::Text("Input Wires:");
-		for (int i = 0; i < component.m_component.m_input_wires.size(); ++i) {
-			ImGui::Text("  Input %d: %d", i, component.m_component.m_input_wires[i]);
+		for (int i = 0; i < component->m_inputWireIds.size(); ++i) {
+			ImGui::Text("  Input %d: %d", i, component->m_inputWireIds[i]);
 		}
 	}
     
@@ -228,10 +227,10 @@ void App::Draw()
     if (current_mouse_state == MouseState::Connecting)
     {
 		auto& inputComponent = circuit.getComponent(connecting_context.sourceComponentID);
-        Vector2 start = inputComponent.getOutputPosition();
+        Vector2 start = inputComponent->getOutputPosition();
         Vector2 end = GetScreenToWorld2D(GetMousePosition(), camera);
 
-        DrawLineEx(start, end, 3, LogicLevelColors[inputComponent.m_component.m_output_pin.value]);
+        DrawLineEx(start, end, 3, LogicLevelColors[inputComponent->m_outputValues[0]]);
     }
     else if (current_mouse_state == MouseState::Selecting)
     {
@@ -302,9 +301,9 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         bool clicked_on_component = false;
 
         for (auto& component : circuit.m_components) {
-            if (component.outputPinContainsPoint(world_mouse_pos))
+            if (component->outputPinContainsPoint(world_mouse_pos) != -1)
             {
-                connecting_context.sourceComponentID = component.id;
+				connecting_context.sourceComponentID = component->m_id;
                 connecting_context.targetPin = { 0, 0 };
                 current_mouse_state = MouseState::Connecting;
                 clicked_on_input_pin = true;
@@ -316,15 +315,15 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         if (clicked_on_input_pin) return;
 
         for (auto& component : circuit.m_components) {
-            if (component.containsPoint(world_mouse_pos)) {
+            if (component->containsPoint(world_mouse_pos)) {
                 current_mouse_state = MouseState::Dragging;
                 dragging_context.initial_mouse_pos = world_mouse_pos;
                 clicked_on_component = true;
 
-                if (std::find(selected_component_ids.begin(), selected_component_ids.end(), component.id) == selected_component_ids.end())
+                if (std::find(selected_component_ids.begin(), selected_component_ids.end(), component->m_id) == selected_component_ids.end())
                 {
                     selected_component_ids.clear();
-                    selected_component_ids.push_back(component.id);
+                    selected_component_ids.push_back(component->m_id);
                 }
 
                 break;
@@ -343,8 +342,8 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
     {
         hovered_component_id = -1;
         for (auto& component : circuit.m_components) {
-            if (component.containsPoint(world_mouse_pos)) {
-                hovered_component_id = component.id;
+            if (component->containsPoint(world_mouse_pos)) {
+                hovered_component_id = component->m_id;
                 break;
             }
         }
@@ -395,9 +394,9 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 
     for (int id : selected_component_ids) {
         auto& component = circuit.getComponent(id);
-        auto position = component.rect;
-        component.rect.x = position.x + delta.x;
-        component.rect.y = position.y + delta.y;
+        auto position = component->m_rect;
+        component->m_rect.x = position.x + delta.x;
+        component->m_rect.y = position.y + delta.y;
     }
 }
 
@@ -405,9 +404,11 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
         if (connecting_context.targetPin.ComponentID != -1) {
+            
             int id = circuit.addWire({ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
             circuit.set_component_input_wire(connecting_context.targetPin.ComponentID, connecting_context.targetPin.PinIndex, id);
-			action_manager.addAction<WirePlacedAction>(id, PinRef{ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
+		    
+            action_manager.addAction<WirePlacedAction>(id, PinRef{ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
         }
 
         connecting_context = { -1, { -1, -1 } };
@@ -417,10 +418,10 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 
     bool found_target = false;
     for (auto& Component : circuit.m_components) {
-        auto input_pin_index = Component.inputPinsContainPoint(world_mouse_pos);
+        auto input_pin_index = Component->inputPinsContainPoint(world_mouse_pos);
 
-        if (input_pin_index != -1 && Component.get_wire_index_for_input_pin(input_pin_index) == -1) {
-            connecting_context.targetPin = { Component.id, input_pin_index };
+        if (input_pin_index != -1 && Component->getInputWireId(input_pin_index) == -1) {
+            connecting_context.targetPin = { Component->m_id, input_pin_index };
             found_target = true;
             return;
         }
@@ -460,7 +461,7 @@ std::vector<NodeInfo> App::getNodeInfo(std::vector<int>& ids)
 	std::vector<NodeInfo> nodes;
     for (int id : ids) {
         auto& component = circuit.getComponent(id);
-        NodeInfo node_info = { component.m_component.m_type, {component.rect.x, component.rect.y} };
+        NodeInfo node_info = { component->getNodeInfoType(), {component->m_rect.x, component->m_rect.y}};
         nodes.push_back(node_info);
     }
 
@@ -468,7 +469,7 @@ std::vector<NodeInfo> App::getNodeInfo(std::vector<int>& ids)
     for (int id : ids) {
 
         auto& component = circuit.getComponent(id);
-        for (int input_wire_id : component.m_component.m_input_wires) {
+        for (int input_wire_id : component->m_inputWireIds) {
             if (input_wire_id == -1) {
                 nodes[index].input_components.push_back(-1);
                 continue;
@@ -498,7 +499,7 @@ std::vector<NodeInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
     for (int id : ids) {
         auto& component = circuit.getComponent(id);
 		std::vector<int> input_component_ids;
-        for (int input_wire_id : component.m_component.m_input_wires) {
+        for (int input_wire_id : component->m_inputWireIds) {
             if (input_wire_id == -1) {
                 input_component_ids.push_back(-1);
                 continue;
@@ -509,7 +510,7 @@ std::vector<NodeInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
             input_component_ids.push_back(source_component_id);
 		}
 
-        NodeInfo node_info = { component.m_component.m_type, {component.rect.x, component.rect.y}, input_component_ids };
+        NodeInfo node_info = { component->getNodeInfoType(), {component->m_rect.x, component->m_rect.y}, input_component_ids};
         nodes.push_back(node_info);
     }
     return nodes;

@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include "NodeInfo.h"
 
 #define PIN_RADIUS 4 
 
@@ -7,12 +8,12 @@ class LogicNode
 {
 
 	public:
-	LogicNode(Component::Type ComponentType, int x, int y, int id)
+	LogicNode(NodeInfo::Type ComponentType, int x, int y, int id)
 		: m_component(ComponentType), rect({ (float)(x / 20 * 20), (float)(y / 20 * 20), 80, 60 }), id(id)
 	{
 	}
 
-	LogicNode(Component::Type ComponentType, Vector2 position, int id)
+	LogicNode(NodeInfo::Type ComponentType, Vector2 position, int id)
 		: LogicNode(ComponentType, position.x, position.y, id)
 	{
 	}
@@ -34,7 +35,7 @@ class LogicNode
 	}
 
 
-	int get_wire_index_for_input_pin(int pinIndex) const {
+	int getInputWireId(int pinIndex) const {
 		if (pinIndex < 0 || pinIndex >= m_component.m_input_wires.size()) return -1;
 		return m_component.m_input_wires[pinIndex];
 	}
