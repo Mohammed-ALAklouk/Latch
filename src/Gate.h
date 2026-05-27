@@ -24,7 +24,7 @@ public:
 	virtual int outputPinContainsPoint(Vector2 point) const;
 
 	virtual void evaluate(const std::vector<LogicLevel>& inputs) = 0;
-	virtual void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const = 0;
+	virtual void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const;
 	virtual char* getLabel() const = 0;
 	virtual NodeInfo::Type getNodeInfoType() const = 0;
 	virtual Vector2 getInputPosition(int input_index) const = 0;
@@ -70,7 +70,6 @@ public:
 		m_outputValues.resize(1, LogicLevel::UNDEFINED);
 	}
 
-	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 2) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -112,7 +111,6 @@ public:
 		m_outputWireIds.resize(1, -1);
 		m_outputValues.resize(1, LogicLevel::UNDEFINED);
 	}
-	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 2) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -150,7 +148,6 @@ class NotGate : public Gate {
 		m_outputWireIds.resize(1, -1);
 		m_outputValues.resize(1, LogicLevel::UNDEFINED);
 	}
-	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 1) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -172,6 +169,58 @@ class NotGate : public Gate {
 	}
 };
 
+class LedGate : public Gate {
+public:
+	LedGate(int id, Vector2 position) : Gate(id, position)
+	{
+		m_rect.width = 80;
+		m_rect.height = 60;
+		m_inputWireIds.resize(1, -1);
+		m_outputWireIds.resize(0);
+		m_outputValues.resize(0);
+	}
+
+	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override
+	{
+		auto borderColor = BorderColor;
+		if (highlighted) borderColor = BorderHighlightColor;
+		if (selected) borderColor = BorderSelectedColor;
+
+		DrawRectangleGradientV(m_rect.x, m_rect.y, m_rect.width, m_rect.height, body_top, body_bot);
+		DrawRectangle(m_rect.x, m_rect.y, 3.0f, m_rect.height, AccentColor);
+		DrawRectangleRoundedLinesEx(m_rect, 0.1f, 4, 1.5f, borderColor);
+
+		Color fillColor = LogicLevelColors[inputs[0]];
+		DrawCircle(getInputPosition(0).x, getInputPosition(0).y, PinRadius, fillColor);
+		if (inputs[0] == LogicLevel::UNDEFINED) fillColor = Fade(RED, 0.4f);
+
+		DrawCircle(m_rect.x + m_rect.width / 2, m_rect.y + m_rect.height / 2, 20, fillColor);
+		DrawCircleLines(m_rect.x + m_rect.width / 2, m_rect.y + m_rect.height / 2, 20, borderColor);
+	}
+
+	void evaluate(const std::vector<LogicLevel>& inputs) override{
+	}
+	char* getLabel() const override { return "LED"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::LED; }
+	Vector2 getInputPosition(int input_index) const override
+	{
+		return { m_rect.x - PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { 0, 0 }; // No output pins
+	}
+	int inputPinsContainPoint(Vector2 point) const override
+	{
+		Vector2 inputPosition = getInputPosition(0);
+		if (CheckCollisionCircles(point, PinRadius, inputPosition, PinRadius)) {
+			return 0;
+		}
+		return -1;
+	}
+
+};
+
 class HighGate : public Gate {
 public:
 	constexpr static LogicLevel LookupTable[3] = {
@@ -187,7 +236,6 @@ public:
 		m_outputWireIds.resize(1, -1);
 		m_outputValues.resize(1, LogicLevel::HIGH);
 	}
-	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		m_outputValues[0] = LogicLevel::HIGH;
 	}
@@ -222,7 +270,6 @@ public:
 		m_outputWireIds.resize(1, -1);
 		m_outputValues.resize(1, LogicLevel::LOW);
 	}
-	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override;
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		m_outputValues[0] = LogicLevel::LOW;
 	}

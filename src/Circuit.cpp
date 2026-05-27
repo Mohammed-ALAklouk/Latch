@@ -85,6 +85,9 @@ int Circuit::addComponent(NodeInfo::Type type, Vector2 position)
 	case NodeInfo::LOW:
 		new_component = std::make_unique<LowGate>(id, position);
 		break;
+	case NodeInfo::LED:
+		new_component = std::make_unique<LedGate>(id, position);
+		break;
 	default:
 		return -1;
 	}

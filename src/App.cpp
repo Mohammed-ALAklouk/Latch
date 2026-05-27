@@ -173,6 +173,8 @@ void App::UI()
         selected_component_type = NodeInfo::Type::HIGH;
     if (ImGui::Button("LOW"))
         selected_component_type = NodeInfo::Type::LOW;
+    if (ImGui::Button("LED"))
+		selected_component_type = NodeInfo::Type::LED;
     ImGui::End();
 
 	ImGui::Begin("Simulation");

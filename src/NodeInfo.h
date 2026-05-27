@@ -10,6 +10,7 @@ struct NodeInfo {
 		NOT,
 		HIGH,
 		LOW,
+		LED,
 		COMPONENT_COUNT
 	};
 
