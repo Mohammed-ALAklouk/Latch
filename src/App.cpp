@@ -80,7 +80,7 @@ void App::HandleInput()
     if (IsKeyDown(KEY_LEFT_CONTROL))
     {
         if (IsKeyPressed(KEY_C)) {
-            copy_of_components = getNodeInfo(selected_component_ids);
+            copy_of_components = getNodeInfoCopy(selected_component_ids);
             
 			Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
 			Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
@@ -405,9 +405,7 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
         if (connecting_context.targetPin.ComponentID != -1) {
             
-            int id = circuit.addWire({ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
-            circuit.set_component_input_wire(connecting_context.targetPin.ComponentID, connecting_context.targetPin.PinIndex, id);
-		    
+            int id = circuit.addWire({ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);		    
             action_manager.addAction<WirePlacedAction>(id, PinRef{ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
         }
 
@@ -456,7 +454,7 @@ void App::UpdateSelectingState(const Vector2& world_mouse_pos)
     circuit.selectComponentsInArea(selecting_context.selectionRect, selected_component_ids);
 }
 
-std::vector<NodeInfo> App::getNodeInfo(std::vector<int>& ids)
+std::vector<NodeInfo> App::getNodeInfoCopy(std::vector<int>& ids)
 {
 	std::vector<NodeInfo> nodes;
     for (int id : ids) {
@@ -515,7 +513,6 @@ std::vector<NodeInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
     }
     return nodes;
 }
-
 
 void App::Run()
 {

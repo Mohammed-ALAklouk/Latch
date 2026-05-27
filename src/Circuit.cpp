@@ -108,7 +108,8 @@ int Circuit::addWire(PinRef source, PinRef destination)
 	int id = m_wire_ids.getNextId();
 	auto& source_component = getComponent(source.ComponentID);
 	source_component->m_outputWireIds[source.PinIndex] = id;
-	
+	set_component_input_wire(destination.ComponentID, destination.PinIndex, id);
+
 	m_wires.push_back({ source, destination, source_component->m_outputValues[source.PinIndex], id });
 	m_wire_ids.setIndex(id, m_wires.size() - 1);
 	return id;
