@@ -1,6 +1,6 @@
-#include "NewCircuit.h"
+#include "Circuit.h"
 
-void NewCircuit::evaluate()
+void Circuit::evaluate()
 {
 	for (auto& wire : m_wires)
 	{
@@ -15,7 +15,7 @@ void NewCircuit::evaluate()
 	}
 }
 
-void NewCircuit::evaluateComponent(std::unique_ptr<Gate>& component)
+void Circuit::evaluateComponent(std::unique_ptr<Gate>& component)
 {
 	std::vector<LogicLevel> input_values;
 	for (int i = 0; i < component->m_inputWireIds.size(); ++i)
@@ -32,7 +32,7 @@ void NewCircuit::evaluateComponent(std::unique_ptr<Gate>& component)
 	component->evaluate(input_values);
 }
 
-void NewCircuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID)
+void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID)
 {
 	for (auto& component : m_components)
 	{
@@ -64,7 +64,7 @@ void NewCircuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredC
 	}
 }
 
-int NewCircuit::addComponent(NodeInfo::Type type, Vector2 position)
+int Circuit::addComponent(NodeInfo::Type type, Vector2 position)
 {
 	std::unique_ptr<Gate> new_component;
 	int id = m_component_ids.getNextId();
@@ -93,7 +93,7 @@ int NewCircuit::addComponent(NodeInfo::Type type, Vector2 position)
 	return id;
 }
 
-void NewCircuit::set_component_input_wire(int componentID, int input_index, int wire_ID)
+void Circuit::set_component_input_wire(int componentID, int input_index, int wire_ID)
 {
 	auto& component = getComponent(componentID);
 	if (component) {
@@ -103,7 +103,7 @@ void NewCircuit::set_component_input_wire(int componentID, int input_index, int 
 	}
 }
 
-int NewCircuit::addWire(PinRef source, PinRef destination)
+int Circuit::addWire(PinRef source, PinRef destination)
 {
 	int id = m_wire_ids.getNextId();
 	auto& source_component = getComponent(source.ComponentID);
@@ -114,7 +114,7 @@ int NewCircuit::addWire(PinRef source, PinRef destination)
 	return id;
 }
 
-void NewCircuit::removeComponent(int id)
+void Circuit::removeComponent(int id)
 {
 	int index = m_component_ids.getIndex(id);
 	if (index != -1) {
@@ -137,7 +137,7 @@ void NewCircuit::removeComponent(int id)
 	}
 }
 
-void NewCircuit::removeWire(int id)
+void Circuit::removeWire(int id)
 {
 	int index = m_wire_ids.getIndex(id);
 	if (index != -1) {
@@ -166,7 +166,7 @@ void NewCircuit::removeWire(int id)
 	}
 }
 
-void NewCircuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const
+void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const
 {
 	for (const auto& component : m_components) {
 		if (CheckCollisionRecs(component->m_rect, selectionRect)) {
@@ -175,7 +175,7 @@ void NewCircuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int
 	}
 }
 
-void NewCircuit::restoreComponent(int id, NodeInfo nodeInfo)
+void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 {
 	std::unique_ptr<Gate> new_component;
 	switch (nodeInfo.type)

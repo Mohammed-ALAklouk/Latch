@@ -8,7 +8,7 @@
 
 
 
-class NewCircuit
+class Circuit
 {
 public:
 

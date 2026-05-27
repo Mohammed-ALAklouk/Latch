@@ -7,8 +7,7 @@
 #include "imgui.h"
 
 #include "Action.h"
-
-#include "NewCircuit.h"
+#include "Circuit.h"
 
 struct PanningContext {
 	Vector2 initial_pos;
@@ -92,8 +91,7 @@ private:
 	ConnectingContext connecting_context;
 	SelectionContext selecting_context;
 
-	//Circuit circuit;
-	NewCircuit circuit;
+	Circuit circuit;
 
 	bool gate_placed = false;
 	bool space_was_pressed = false;
