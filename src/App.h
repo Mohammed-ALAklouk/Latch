@@ -5,8 +5,7 @@
 #include "raylib.h"
 #include "rlImGui.h"
 #include "imgui.h"
-#include "LogicNode.h"
-#include "Circuit.h"
+
 #include "Action.h"
 
 #include "NewCircuit.h"
