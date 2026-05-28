@@ -169,10 +169,6 @@ void App::UI()
         selected_component_type = NodeInfo::Type::OR;
     if (ImGui::Button("NOT"))
         selected_component_type = NodeInfo::Type::NOT;
-    if (ImGui::Button("HIGH"))
-        selected_component_type = NodeInfo::Type::HIGH;
-    if (ImGui::Button("LOW"))
-        selected_component_type = NodeInfo::Type::LOW;
     if (ImGui::Button("LED"))
 		selected_component_type = NodeInfo::Type::LED;
     if (ImGui::Button("TOGGLE")) 

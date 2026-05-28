@@ -8,8 +8,6 @@ struct NodeInfo {
 		AND,
 		OR,
 		NOT,
-		HIGH,
-		LOW,
 		LED,
 		TOGGLE,
 		COMPONENT_COUNT

@@ -79,12 +79,6 @@ int Circuit::addComponent(NodeInfo::Type type, Vector2 position)
 	case NodeInfo::NOT:
 		new_component = std::make_unique<NotGate>(id, position);
 		break;
-	case NodeInfo::HIGH:
-		new_component = std::make_unique<HighGate>(id, position);
-		break;
-	case NodeInfo::LOW:
-		new_component = std::make_unique<LowGate>(id, position);
-		break;
 	case NodeInfo::LED:
 		new_component = std::make_unique<LedGate>(id, position);
 		break;
@@ -196,12 +190,14 @@ void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 	case NodeInfo::NOT:
 		new_component = std::make_unique<NotGate>(id, nodeInfo.position);
 		break;
-	case NodeInfo::HIGH:
-		new_component = std::make_unique<HighGate>(id, nodeInfo.position);
+	case NodeInfo::LED:
+		new_component = std::make_unique<LedGate>(id, nodeInfo.position);
 		break;
-	case NodeInfo::LOW:
-		new_component = std::make_unique<LowGate>(id, nodeInfo.position);
+	case NodeInfo::TOGGLE:
+		new_component = std::make_unique<ToggleGate>(id, nodeInfo.position);
 		break;
+	default:
+		return;
 	}
 
 	for (int i = 0; i < nodeInfo.input_components.size(); ++i) {
