@@ -88,6 +88,9 @@ int Circuit::addComponent(NodeInfo::Type type, Vector2 position)
 	case NodeInfo::LED:
 		new_component = std::make_unique<LedGate>(id, position);
 		break;
+	case NodeInfo::TOGGLE:
+		new_component = std::make_unique<ToggleGate>(id, position);
+		break;
 	default:
 		return -1;
 	}

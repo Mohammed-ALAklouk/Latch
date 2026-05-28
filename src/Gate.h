@@ -29,6 +29,7 @@ public:
 	virtual NodeInfo::Type getNodeInfoType() const = 0;
 	virtual Vector2 getInputPosition(int input_index) const = 0;
 	virtual Vector2 getOutputPosition(int output_index = 0) const = 0;
+	virtual void onClick() {}
 
 
 	constexpr static float PinRadius = 5.0f;
@@ -286,4 +287,55 @@ public:
 	}
 	int inputPinsContainPoint(Vector2 point) const override { return false; }
 
+};
+
+class ToggleGate : public Gate {
+	public:
+	ToggleGate(int id, Vector2 position) : Gate(id, position)
+	{
+		m_rect.width = 80;
+		m_rect.height = 60;
+		m_inputWireIds.resize(0);
+		m_outputWireIds.resize(1, -1);
+		m_outputValues.resize(1, LogicLevel::LOW);
+	}
+	void evaluate(const std::vector<LogicLevel>& inputs) override {
+	}
+
+	char* getLabel() const override { return "TOGGLE"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::TOGGLE; }
+	Vector2 getInputPosition(int input_index) const override
+	{
+		return { 0, 0 }; // No input pins
+	}
+
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+	void onClick() override {
+		m_outputValues[0] = (m_outputValues[0] == LogicLevel::HIGH) ? LogicLevel::LOW : LogicLevel::HIGH;
+	}
+
+	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override
+	{
+		auto borderColor = BorderColor;
+		if (highlighted) borderColor = BorderHighlightColor;
+		if (selected) borderColor = BorderSelectedColor;
+		DrawRectangleGradientV(m_rect.x, m_rect.y, m_rect.width, m_rect.height, body_top, body_bot);
+		DrawRectangle(m_rect.x, m_rect.y, 3.0f, m_rect.height, AccentColor);
+		DrawRectangleRoundedLinesEx(m_rect, 0.1f, 4, 1.5f, borderColor);
+		
+		Color fillColor = LogicLevelColors[m_outputValues[0]];
+		DrawCircle(m_rect.x + m_rect.width / 2, m_rect.y + m_rect.height / 2, 20, fillColor);
+		DrawCircleLines(m_rect.x + m_rect.width / 2, m_rect.y + m_rect.height / 2, 20, borderColor);
+		
+		const char* label = m_outputValues[0] == LogicLevel::HIGH ? "1" : (m_outputValues[0] == LogicLevel::LOW ? "0" : "");
+		int text_w = MeasureText(label, 12);
+		float tx = m_rect.x + (m_rect.width - text_w) * 0.5f;
+		float ty = m_rect.y + (m_rect.height - 12) * 0.5f;
+		DrawText(label, (int)tx, (int)ty, 12, WHITE);
+
+		DrawCircle(getOutputPosition().x, getOutputPosition().y, PinRadius, LogicLevelColors[m_outputValues[0]]);
+	}
 };

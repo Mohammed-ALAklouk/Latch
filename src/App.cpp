@@ -175,6 +175,8 @@ void App::UI()
         selected_component_type = NodeInfo::Type::LOW;
     if (ImGui::Button("LED"))
 		selected_component_type = NodeInfo::Type::LED;
+    if (ImGui::Button("TOGGLE")) 
+		selected_component_type = NodeInfo::Type::TOGGLE;
     ImGui::End();
 
 	ImGui::Begin("Simulation");
@@ -299,7 +301,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         }
 
 
-        bool clicked_on_input_pin = false;
+        bool clicked_on_output_pin = false;
         bool clicked_on_component = false;
 
         for (auto& component : circuit.m_components) {
@@ -308,18 +310,19 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 				connecting_context.sourceComponentID = component->m_id;
                 connecting_context.targetPin = { 0, 0 };
                 current_mouse_state = MouseState::Connecting;
-                clicked_on_input_pin = true;
+                clicked_on_output_pin = true;
                 break;
             }
 
         }
 
-        if (clicked_on_input_pin) return;
+        if (clicked_on_output_pin) return;
 
         for (auto& component : circuit.m_components) {
             if (component->containsPoint(world_mouse_pos)) {
                 current_mouse_state = MouseState::Dragging;
                 dragging_context.initial_mouse_pos = world_mouse_pos;
+				component->onClick();
                 clicked_on_component = true;
 
                 if (std::find(selected_component_ids.begin(), selected_component_ids.end(), component->m_id) == selected_component_ids.end())

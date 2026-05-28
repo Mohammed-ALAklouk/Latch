@@ -11,6 +11,7 @@ struct NodeInfo {
 		HIGH,
 		LOW,
 		LED,
+		TOGGLE,
 		COMPONENT_COUNT
 	};
 
