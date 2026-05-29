@@ -13,6 +13,7 @@ class Circuit
 public:
 
 	void evaluate();
+	std::vector<LogicLevel> getComponentInputValues(std::unique_ptr<Gate>& component);
 	void evaluateComponent(std::unique_ptr<Gate>& component);
 	void draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID);
 	int addComponent(NodeInfo::Type type, Vector2 position);

@@ -24,8 +24,8 @@ public:
 	virtual int outputPinContainsPoint(Vector2 point) const;
 
 	virtual void evaluate(const std::vector<LogicLevel>& inputs) = 0;
-	virtual void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const;
-	virtual char* getLabel() const = 0;
+	virtual void draw(std::vector<LogicLevel>& inputs, bool selected, bool highlighted) const;
+	virtual const char* getLabel() const = 0;
 	virtual NodeInfo::Type getNodeInfoType() const = 0;
 	virtual Vector2 getInputPosition(int input_index) const = 0;
 	virtual Vector2 getOutputPosition(int output_index = 0) const = 0;
@@ -33,11 +33,6 @@ public:
 
 
 	constexpr static float PinRadius = 5.0f;
-	constexpr static Color LogicLevelColors[] = {
-		{60, 60, 60, 255}, // LOW
-		{0, 220, 80, 255}, // HIGH
-		{255, 150, 0, 255} // UNDEFINED
-	};
 
 	Rectangle m_rect;
 	Color body_top = { 45, 50, 62, 255 };
@@ -80,7 +75,7 @@ public:
 		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
 	}
 	
-	char* getLabel() const override { return "AND"; }
+	const char* getLabel() const override { return "AND"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::AND; }
 
 	Vector2 getInputPosition(int input_index) const override
@@ -121,7 +116,7 @@ public:
 	}
 
 
-	char* getLabel() const override { return "OR"; }
+	const char* getLabel() const override { return "OR"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::OR; }
 	Vector2 getInputPosition(int input_index) const override
 	{
@@ -158,7 +153,7 @@ class NotGate : public Gate {
 	}
 
 
-	char* getLabel() const override { return "NOT"; }
+	const char* getLabel() const override { return "NOT"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::NOT; }
 	Vector2 getInputPosition(int input_index) const override
 	{
@@ -181,7 +176,7 @@ public:
 		m_outputValues.resize(0);
 	}
 
-	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override
+	void draw(std::vector<LogicLevel>& inputs, bool selected, bool highlighted) const override
 	{
 		auto borderColor = BorderColor;
 		if (highlighted) borderColor = BorderHighlightColor;
@@ -201,7 +196,7 @@ public:
 
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 	}
-	char* getLabel() const override { return "LED"; }
+	const char* getLabel() const override { return "LED"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::LED; }
 	Vector2 getInputPosition(int input_index) const override
 	{
@@ -235,7 +230,7 @@ class ToggleGate : public Gate {
 	void evaluate(const std::vector<LogicLevel>& inputs) override {
 	}
 
-	char* getLabel() const override { return "TOGGLE"; }
+	const char* getLabel() const override { return "TOGGLE"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::TOGGLE; }
 	Vector2 getInputPosition(int input_index) const override
 	{
@@ -250,7 +245,7 @@ class ToggleGate : public Gate {
 		m_outputValues[0] = (m_outputValues[0] == LogicLevel::HIGH) ? LogicLevel::LOW : LogicLevel::HIGH;
 	}
 
-	void draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const override
+	void draw(std::vector<LogicLevel>& inputs, bool selected, bool highlighted) const override
 	{
 		auto borderColor = BorderColor;
 		if (highlighted) borderColor = BorderHighlightColor;

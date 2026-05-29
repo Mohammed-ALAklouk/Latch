@@ -22,7 +22,7 @@ int Gate::outputPinContainsPoint(Vector2 point) const
 	return -1;
 }
 
-void Gate::draw(std::vector<LogicLevel> inputs, bool selected, bool highlighted) const
+void Gate::draw(std::vector<LogicLevel>& inputs, bool selected, bool highlighted) const
 {
 	Color borderColor = BorderColor;
 	if (highlighted) borderColor = BorderHighlightColor;

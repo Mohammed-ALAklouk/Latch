@@ -15,7 +15,7 @@ void Circuit::evaluate()
 	}
 }
 
-void Circuit::evaluateComponent(std::unique_ptr<Gate>& component)
+std::vector<LogicLevel> Circuit::getComponentInputValues(std::unique_ptr<Gate>& component) 
 {
 	std::vector<LogicLevel> input_values;
 	for (int i = 0; i < component->m_inputWireIds.size(); ++i)
@@ -29,6 +29,12 @@ void Circuit::evaluateComponent(std::unique_ptr<Gate>& component)
 		input_values.push_back(getWire(wire_id).Value);
 	}
 
+	return input_values;
+}
+
+void Circuit::evaluateComponent(std::unique_ptr<Gate>& component)
+{
+	std::vector<LogicLevel> input_values = getComponentInputValues(component);
 	component->evaluate(input_values);
 }
 
@@ -36,20 +42,10 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 {
 	for (auto& component : m_components)
 	{
-		std::vector<LogicLevel> input_values;
-		for (int i = 0; i < component->m_inputWireIds.size(); ++i)
-		{
-			int wire_id = component->m_inputWireIds[i];
-			if (wire_id == -1)
-			{
-				input_values.push_back(LogicLevel::UNDEFINED);
-				continue;
-			}
-			input_values.push_back(getWire(wire_id).Value);
-		}
+		std::vector<LogicLevel> input_values = getComponentInputValues(component);
 
-		bool selected = std::find(selectedComponentIDs.begin(), selectedComponentIDs.end(), m_component_ids.getIndex(component->m_id)) != selectedComponentIDs.end();
-		bool highlighted = hoveredComponentID == m_component_ids.getIndex(component->m_id);
+		bool selected = std::find(selectedComponentIDs.begin(), selectedComponentIDs.end(), component->m_id) != selectedComponentIDs.end();
+		bool highlighted = hoveredComponentID == component->m_id;
 		component->draw(input_values, selected, highlighted);
 	}
 
@@ -59,7 +55,7 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 		auto& destination_component = getComponent(wire.Destination.ComponentID);
 		Vector2 start_pos = source_component->getOutputPosition(wire.Source.PinIndex);
 		Vector2 end_pos = destination_component->getInputPosition(wire.Destination.PinIndex);
-		Color wire_color = Gate::LogicLevelColors[wire.Value];
+		Color wire_color = LogicLevelColors[wire.Value];
 		DrawLineEx(start_pos, end_pos, 3, wire_color);
 	}
 }
@@ -126,10 +122,12 @@ void Circuit::removeWire(int id)
 	int index = m_wire_ids.getIndex(id);
 	if (index != -1) {
 		auto& wire = getWire(id);
-		auto& input_component = getComponent(wire.Source.ComponentID);
-		input_component->m_outputWireIds.erase(
-			std::remove(input_component->m_outputWireIds.begin(), input_component->m_outputWireIds.end(), id),
-			input_component->m_outputWireIds.end());
+		auto& source_component = getComponent(wire.Source.ComponentID);
+		for (auto& output_wire_id : source_component->m_outputWireIds) {
+			if (output_wire_id == id) {
+				output_wire_id = -1;
+			}
+		}
 
 		auto& output_component = getComponent(wire.Destination.ComponentID);
 		for (auto& input_wire_id : output_component->m_inputWireIds) {
