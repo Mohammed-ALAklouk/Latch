@@ -101,10 +101,10 @@ void Circuit::removeComponent(int id)
 		auto& component = getComponent(id);
 		auto input_wires_copy = component->m_inputWireIds;
 
-		for (int id : input_wires_copy) removeWire(id);
+		for (int input_id : input_wires_copy) removeWire(input_id);
 
 		auto output_wires_copy = component->m_outputWireIds;
-		for (int id : output_wires_copy) removeWire(id);
+		for (int output_id : output_wires_copy) removeWire(output_id);
 
 		int lastIndex = (int)m_components.size() - 1;
 		if (index != lastIndex) {
@@ -161,7 +161,9 @@ void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 {
 	if (nodeInfo.type < 0 || nodeInfo.type >= NodeInfo::COMPONENT_COUNT) return;
 
-	std::unique_ptr<Gate> new_component = std::move(GateFactories[nodeInfo.type](id, nodeInfo.position));
+	m_components.push_back(GateFactories[nodeInfo.type](id, nodeInfo.position));
+	m_component_ids.reuseId(id, m_components.size() - 1);
+	auto& new_component = m_components.back();
 
 	for (int i = 0; i < nodeInfo.input_components.size(); ++i) {
 		if (nodeInfo.input_components[i] == -1) {
@@ -170,9 +172,5 @@ void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 		}
 
 		int wireId = addWire({ nodeInfo.input_components[i], 0 }, { id, i });
-		new_component->m_inputWireIds[i] = wireId;
 	}
-
-	m_components.push_back(std::move(new_component));
-	m_component_ids.reuseId(id, m_components.size() - 1);
 }
