@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
+#include <memory>
 #include "Pin.h"
 #include "NodeInfo.h"
-
 
 class Gate {
 public:
@@ -271,4 +271,20 @@ class ToggleGate : public Gate {
 
 		DrawCircle(getOutputPosition().x, getOutputPosition().y, PinRadius, LogicLevelColors[m_outputValues[0]]);
 	}
+};
+
+
+using GateFactory = std::unique_ptr<Gate>(*)(int id, Vector2 position);
+
+template<typename T>
+std::unique_ptr<Gate> makeGate(int id, Vector2 position) {
+	return std::make_unique<T>(id, position);
+}
+
+inline constexpr GateFactory GateFactories[NodeInfo::COMPONENT_COUNT] = {
+	makeGate<AndGate>,     // AND
+	makeGate<OrGate>,      // OR
+	makeGate<NotGate>,     // NOT
+	makeGate<LedGate>,     // LED
+	makeGate<ToggleGate>,  // TOGGLE
 };

@@ -66,28 +66,11 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 
 int Circuit::addComponent(NodeInfo::Type type, Vector2 position)
 {
-	std::unique_ptr<Gate> new_component;
+	if (type < 0 || type >= NodeInfo::COMPONENT_COUNT) return -1;
+
 	int id = m_component_ids.getNextId();
-	switch (type)
-	{
-	case NodeInfo::AND:
-		new_component = std::make_unique<AndGate>(id, position);
-		break;
-	case NodeInfo::OR:
-		new_component = std::make_unique<OrGate>(id, position);
-		break;
-	case NodeInfo::NOT:
-		new_component = std::make_unique<NotGate>(id, position);
-		break;
-	case NodeInfo::LED:
-		new_component = std::make_unique<LedGate>(id, position);
-		break;
-	case NodeInfo::TOGGLE:
-		new_component = std::make_unique<ToggleGate>(id, position);
-		break;
-	default:
-		return -1;
-	}
+	std::unique_ptr<Gate> new_component = std::move(GateFactories[type](id, position));
+
 	m_component_ids.setIndex(id, m_components.size());
 	m_components.push_back(std::move(new_component));
 	return id;
@@ -178,27 +161,9 @@ void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& 
 
 void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 {
-	std::unique_ptr<Gate> new_component;
-	switch (nodeInfo.type)
-	{
-	case NodeInfo::AND:
-		new_component = std::make_unique<AndGate>(id, nodeInfo.position);
-		break;
-	case NodeInfo::OR:
-		new_component = std::make_unique<OrGate>(id, nodeInfo.position);
-		break;
-	case NodeInfo::NOT:
-		new_component = std::make_unique<NotGate>(id, nodeInfo.position);
-		break;
-	case NodeInfo::LED:
-		new_component = std::make_unique<LedGate>(id, nodeInfo.position);
-		break;
-	case NodeInfo::TOGGLE:
-		new_component = std::make_unique<ToggleGate>(id, nodeInfo.position);
-		break;
-	default:
-		return;
-	}
+	if (nodeInfo.type < 0 || nodeInfo.type >= NodeInfo::COMPONENT_COUNT) return;
+
+	std::unique_ptr<Gate> new_component = std::move(GateFactories[nodeInfo.type](id, nodeInfo.position));
 
 	for (int i = 0; i < nodeInfo.input_components.size(); ++i) {
 		if (nodeInfo.input_components[i] == -1) {
