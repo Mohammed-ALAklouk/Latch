@@ -7,8 +7,14 @@
 class Gate {
 public:
 	Gate() = delete;
-	Gate(int id, Vector2 position)
-		: m_id(id), m_rect({ position.x, position.y, 0, 0 })	{	}
+	Gate(int id, Vector2 position, int numInputs, int numOutputs, float w)
+		: m_id(id), m_rect({ position.x, position.y, w, (numInputs + 1) * 20.0f })
+	{
+		m_inputWireIds.resize(numInputs, -1);
+		m_outputWireIds.resize(numOutputs, -1);
+		m_outputValues.resize(numOutputs, LogicLevel::UNDEFINED);
+	}
+
 	virtual ~Gate() = default;
 
 	bool containsPoint(Vector2 point) const {
@@ -57,14 +63,7 @@ public:
 		LogicLevel::LOW, LogicLevel::UNDEFINED,	LogicLevel::UNDEFINED // UNDEFINED
 	};
 
-	AndGate(int id, Vector2 position) : Gate(id, position)
-	{
-		m_rect.width = 80;
-		m_rect.height = 60;
-		m_inputWireIds.resize(2, -1);
-		m_outputWireIds.resize(1, -1);
-		m_outputValues.resize(1, LogicLevel::UNDEFINED);
-	}
+	AndGate(int id, Vector2 position) : Gate(id, position, 2, 1, 80)	{	}
 
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 2) {
@@ -99,14 +98,8 @@ public:
 		LogicLevel::UNDEFINED,	LogicLevel::HIGH,	LogicLevel::UNDEFINED // UNDEFINED
 	};
 
-	OrGate(int id, Vector2 position) : Gate(id, position)
-	{
-		m_rect.width = 60;
-		m_rect.height = 40;
-		m_inputWireIds.resize(2, -1);
-		m_outputWireIds.resize(1, -1);
-		m_outputValues.resize(1, LogicLevel::UNDEFINED);
-	}
+	OrGate(int id, Vector2 position) : Gate(id, position, 2, 1, 60)	{	}
+
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 2) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -136,14 +129,8 @@ class NotGate : public Gate {
 		LogicLevel::LOW,  // HIGH
 		LogicLevel::UNDEFINED // UNDEFINED
 	};
-	NotGate(int id, Vector2 position) : Gate(id, position)
-	{
-		m_rect.width = 80;
-		m_rect.height = 60;
-		m_inputWireIds.resize(1, -1);
-		m_outputWireIds.resize(1, -1);
-		m_outputValues.resize(1, LogicLevel::UNDEFINED);
-	}
+	NotGate(int id, Vector2 position) : Gate(id, position, 1, 1, 80)	{	}
+
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 1) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -167,13 +154,8 @@ class NotGate : public Gate {
 
 class LedGate : public Gate {
 public:
-	LedGate(int id, Vector2 position) : Gate(id, position)
-	{
-		m_rect.width = 80;
+	LedGate(int id, Vector2 position) : Gate(id, position, 1, 0, 80) {
 		m_rect.height = 60;
-		m_inputWireIds.resize(1, -1);
-		m_outputWireIds.resize(0);
-		m_outputValues.resize(0);
 	}
 
 	void draw(std::vector<LogicLevel>& inputs, bool selected, bool highlighted) const override
@@ -219,14 +201,12 @@ public:
 
 class ToggleGate : public Gate {
 	public:
-	ToggleGate(int id, Vector2 position) : Gate(id, position)
+	ToggleGate(int id, Vector2 position) : Gate(id, position, 0, 1, 80)
 	{
-		m_rect.width = 80;
 		m_rect.height = 60;
-		m_inputWireIds.resize(0);
-		m_outputWireIds.resize(1, -1);
-		m_outputValues.resize(1, LogicLevel::LOW);
+		m_outputValues[0] = LogicLevel::LOW;
 	}
+
 	void evaluate(const std::vector<LogicLevel>& inputs) override {
 	}
 
