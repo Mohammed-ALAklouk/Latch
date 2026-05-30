@@ -50,6 +50,8 @@ void App::HandleInput()
     if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_RIGHT) && !gate_placed)
     {
         auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+		world_mouse_pos.x = int(world_mouse_pos.x / cell_size) * cell_size;
+		world_mouse_pos.y = int(world_mouse_pos.y / cell_size) * cell_size;
 		int new_id = circuit.addComponent(selected_component_type, world_mouse_pos);
         action_manager.addAction<ComponentPlacedAction>(new_id, NodeInfo{selected_component_type, world_mouse_pos, {}});
         gate_placed = true;
@@ -376,7 +378,7 @@ void App::UpdatePanningState(const Vector2& world_mouse_pos)
 void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
-        action_manager.addAction<ComponentsMovedAction>(selected_component_ids, dragging_context.delta);
+        action_manager.addAction<ComponentsMovedAction>(selected_component_ids, dragging_context.snapped_delta);
 		current_mouse_state = MouseState::Idle;
         dragging_context = { {0, 0}, {0, 0} };
 
@@ -384,14 +386,12 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
     }
     
     Vector2 delta = {
-        world_mouse_pos.x - dragging_context.initial_mouse_pos.x,
-        world_mouse_pos.y - dragging_context.initial_mouse_pos.y
+        int(world_mouse_pos.x - dragging_context.initial_mouse_pos.x) / 20 * 20 - dragging_context.snapped_delta.x,
+        int(world_mouse_pos.y - dragging_context.initial_mouse_pos.y) / 20 * 20 - dragging_context.snapped_delta.y
     };
 
-	dragging_context.delta.x += delta.x;
-	dragging_context.delta.y += delta.y;
-
-    dragging_context.initial_mouse_pos = world_mouse_pos;
+	dragging_context.snapped_delta.x += delta.x;
+	dragging_context.snapped_delta.y += delta.y;
 
     for (int id : selected_component_ids) {
         auto& component = circuit.getComponent(id);

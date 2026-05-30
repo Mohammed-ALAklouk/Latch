@@ -16,7 +16,7 @@ struct PanningContext {
 
 struct DraggingContext {
 	Vector2 initial_mouse_pos;
-	Vector2 delta;
+	Vector2 snapped_delta;
 };
 
 struct ConnectingContext {
