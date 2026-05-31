@@ -4,11 +4,13 @@
 #include "Pin.h"
 #include "NodeInfo.h"
 
+#define CELL_SIZE 10.0f
+
 class Gate {
 public:
 	Gate() = delete;
 	Gate(int id, Vector2 position, int numInputs, int numOutputs, float w)
-		: m_id(id), m_rect({ position.x, position.y, w, (numInputs + 1) * 20.0f })
+		: m_id(id), m_rect({ position.x, position.y, w, (numInputs + 2) * CELL_SIZE })
 	{
 		m_inputWireIds.resize(numInputs, -1);
 		m_outputWireIds.resize(numOutputs, -1);
@@ -33,9 +35,16 @@ public:
 	virtual void draw(std::vector<LogicLevel>& inputs, bool selected, bool highlighted) const;
 	virtual const char* getLabel() const = 0;
 	virtual NodeInfo::Type getNodeInfoType() const = 0;
-	virtual Vector2 getInputPosition(int input_index) const = 0;
-	virtual Vector2 getOutputPosition(int output_index = 0) const = 0;
 	virtual void onClick() {}
+
+	virtual Vector2 getInputPosition(int input_index) const
+	{
+		return { m_rect.x, m_rect.y + CELL_SIZE + 2 * CELL_SIZE * (input_index) };
+	}
+
+	virtual Vector2 getOutputPosition(int output_index = 0) const {
+		return { m_rect.x + m_rect.width, m_rect.y + m_rect.height / 2 };
+	}
 
 
 	constexpr static float PinRadius = 5.0f;
@@ -63,7 +72,7 @@ public:
 		LogicLevel::LOW, LogicLevel::UNDEFINED,	LogicLevel::UNDEFINED // UNDEFINED
 	};
 
-	AndGate(int id, Vector2 position) : Gate(id, position, 2, 1, 80)	{	}
+	AndGate(int id, Vector2 position) : Gate(id, position, 2, 1, 4 * CELL_SIZE)	{	}
 
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 2) {
@@ -76,17 +85,6 @@ public:
 	
 	const char* getLabel() const override { return "AND"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::AND; }
-
-	Vector2 getInputPosition(int input_index) const override
-	{
-		float y = m_rect.y + m_rect.height / (m_inputWireIds.size() + 1) * (input_index + 1);
-		return { m_rect.x, y };
-	}
-
-	Vector2 getOutputPosition(int output_index = 0) const override
-	{
-		return { m_rect.x + m_rect.width, m_rect.y + m_rect.height / 2 };
-	}
 };
 
 class OrGate : public Gate {
@@ -98,7 +96,7 @@ public:
 		LogicLevel::UNDEFINED,	LogicLevel::HIGH,	LogicLevel::UNDEFINED // UNDEFINED
 	};
 
-	OrGate(int id, Vector2 position) : Gate(id, position, 2, 1, 60)	{	}
+	OrGate(int id, Vector2 position) : Gate(id, position, 2, 1,  4 * CELL_SIZE)	{	}
 
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 2) {
@@ -111,15 +109,6 @@ public:
 
 	const char* getLabel() const override { return "OR"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::OR; }
-	Vector2 getInputPosition(int input_index) const override
-	{
-		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
-		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
-	}
-	Vector2 getOutputPosition(int output_index = 0) const override
-	{
-		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
 };
 
 class NotGate : public Gate {
@@ -129,7 +118,7 @@ class NotGate : public Gate {
 		LogicLevel::LOW,  // HIGH
 		LogicLevel::UNDEFINED // UNDEFINED
 	};
-	NotGate(int id, Vector2 position) : Gate(id, position, 1, 1, 80)	{	}
+	NotGate(int id, Vector2 position) : Gate(id, position, 1, 1, 4 * CELL_SIZE)	{	}
 
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 		if (inputs.size() < 1) {
@@ -142,20 +131,12 @@ class NotGate : public Gate {
 
 	const char* getLabel() const override { return "NOT"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::NOT; }
-	Vector2 getInputPosition(int input_index) const override
-	{
-		return { m_rect.x - PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
-	Vector2 getOutputPosition(int output_index = 0) const override
-	{
-		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
 };
 
 class LedGate : public Gate {
 public:
-	LedGate(int id, Vector2 position) : Gate(id, position, 1, 0, 80) {
-		m_rect.height = 60;
+	LedGate(int id, Vector2 position) : Gate(id, position, 1, 0, 4 * CELL_SIZE) {
+		m_rect.height =  4 * CELL_SIZE;
 	}
 
 	void draw(std::vector<LogicLevel>& inputs, bool selected, bool highlighted) const override
@@ -180,10 +161,6 @@ public:
 	}
 	const char* getLabel() const override { return "LED"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::LED; }
-	Vector2 getInputPosition(int input_index) const override
-	{
-		return { m_rect.x - PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
 	Vector2 getOutputPosition(int output_index = 0) const override
 	{
 		return { 0, 0 }; // No output pins
@@ -201,9 +178,9 @@ public:
 
 class ToggleGate : public Gate {
 	public:
-	ToggleGate(int id, Vector2 position) : Gate(id, position, 0, 1, 80)
+	ToggleGate(int id, Vector2 position) : Gate(id, position, 0, 1, 4 * CELL_SIZE)
 	{
-		m_rect.height = 60;
+		m_rect.height =  4 * CELL_SIZE;
 		m_outputValues[0] = LogicLevel::LOW;
 	}
 
@@ -212,15 +189,7 @@ class ToggleGate : public Gate {
 
 	const char* getLabel() const override { return "TOGGLE"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::TOGGLE; }
-	Vector2 getInputPosition(int input_index) const override
-	{
-		return { 0, 0 }; // No input pins
-	}
-
-	Vector2 getOutputPosition(int output_index = 0) const override
-	{
-		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
+	
 	void onClick() override {
 		m_outputValues[0] = (m_outputValues[0] == LogicLevel::HIGH) ? LogicLevel::LOW : LogicLevel::HIGH;
 	}
@@ -256,7 +225,7 @@ public:
 		LogicLevel::HIGH, LogicLevel::LOW,  LogicLevel::UNDEFINED, // HIGH
 		LogicLevel::UNDEFINED, LogicLevel::UNDEFINED, LogicLevel::UNDEFINED // UNDEFINED
 	};
-	NandGate(int id, Vector2 position) : Gate(id, position, 2, 1, 80) { }
+	NandGate(int id, Vector2 position) : Gate(id, position, 2, 1, 4 * CELL_SIZE) { }
 	void evaluate(const std::vector<LogicLevel>& inputs) override {
 		if (inputs.size() < 2) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -266,15 +235,6 @@ public:
 	}
 	const char* getLabel() const override { return "NAND"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
-	Vector2 getInputPosition(int input_index) const override
-	{
-		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
-		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
-	}
-	Vector2 getOutputPosition(int output_index = 0) const override
-	{
-		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
 };
 
 class NorGate : public Gate {
@@ -285,7 +245,7 @@ public:
 		LogicLevel::LOW,		LogicLevel::LOW, LogicLevel::LOW, // HIGH
 		LogicLevel::UNDEFINED,	LogicLevel::LOW, LogicLevel::UNDEFINED // UNDEFINED
 	};
-	NorGate(int id, Vector2 position) : Gate(id, position, 2, 1, 60) { }
+	NorGate(int id, Vector2 position) : Gate(id, position, 2, 1,  4 * CELL_SIZE) { }
 	void evaluate(const std::vector<LogicLevel>& inputs) override {
 		if (inputs.size() < 2) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -295,15 +255,6 @@ public:
 	}
 	const char* getLabel() const override { return "NOR"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
-	Vector2 getInputPosition(int input_index) const override
-	{
-		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
-		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
-	}
-	Vector2 getOutputPosition(int output_index = 0) const override
-	{
-		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
 };
 
 class XorGate : public Gate {
@@ -314,7 +265,7 @@ class XorGate : public Gate {
 		LogicLevel::HIGH,	LogicLevel::LOW,	LogicLevel::UNDEFINED, // HIGH
 		LogicLevel::UNDEFINED, LogicLevel::UNDEFINED, LogicLevel::UNDEFINED // UNDEFINED
 	};
-	XorGate(int id, Vector2 position) : Gate(id, position, 2, 1, 60) { }
+	XorGate(int id, Vector2 position) : Gate(id, position, 2, 1,  4 * CELL_SIZE) { }
 	void evaluate(const std::vector<LogicLevel>& inputs) override {
 		if (inputs.size() < 2) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -324,15 +275,6 @@ class XorGate : public Gate {
 	}
 	const char* getLabel() const override { return "XOR"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
-	Vector2 getInputPosition(int input_index) const override
-	{
-		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
-		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
-	}
-	Vector2 getOutputPosition(int output_index = 0) const override
-	{
-		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
 };
 
 class XnorGate : public Gate {
@@ -344,7 +286,7 @@ class XnorGate : public Gate {
 		LogicLevel::LOW,	LogicLevel::HIGH,	LogicLevel::UNDEFINED, // HIGH
 		LogicLevel::UNDEFINED, LogicLevel::UNDEFINED, LogicLevel::UNDEFINED // UNDEFINED
 	};
-	XnorGate(int id, Vector2 position) : Gate(id, position, 2, 1, 60) { }
+	XnorGate(int id, Vector2 position) : Gate(id, position, 2, 1,  4 * CELL_SIZE) { }
 	void evaluate(const std::vector<LogicLevel>& inputs) override {
 		if (inputs.size() < 2) {
 			m_outputValues[0] = LogicLevel::UNDEFINED;
@@ -354,15 +296,6 @@ class XnorGate : public Gate {
 	}
 	const char* getLabel() const override { return "XNOR"; }
 	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
-	Vector2 getInputPosition(int input_index) const override
-	{
-		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
-		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
-	}
-	Vector2 getOutputPosition(int output_index = 0) const override
-	{
-		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
-	}
 };
 
 

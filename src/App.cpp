@@ -397,8 +397,8 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
     }
     
     Vector2 delta = {
-        int(world_mouse_pos.x - dragging_context.initial_mouse_pos.x) / 20 * 20 - dragging_context.snapped_delta.x,
-        int(world_mouse_pos.y - dragging_context.initial_mouse_pos.y) / 20 * 20 - dragging_context.snapped_delta.y
+        int(world_mouse_pos.x - dragging_context.initial_mouse_pos.x) / cell_size * cell_size - dragging_context.snapped_delta.x,
+        int(world_mouse_pos.y - dragging_context.initial_mouse_pos.y) / cell_size * cell_size - dragging_context.snapped_delta.y
     };
 
 	dragging_context.snapped_delta.x += delta.x;

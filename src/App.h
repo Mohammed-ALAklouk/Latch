@@ -63,7 +63,7 @@ private:
 	std::vector<NodeInfo > getNodeInfoDeletion(std::vector<int>& ids);
 
 	
-	int cell_size = 20;
+	int cell_size = CELL_SIZE;
 	int window_width = 800;
 	int window_height = 450;
 
@@ -96,7 +96,7 @@ private:
 	bool gate_placed = false;
 	bool space_was_pressed = false;
 
-	int major_step = 5;
+	int major_step = 100 / CELL_SIZE;
 	float grid_line_minor_thickness = 0.8f;
 	float grid_line_major_thickness = 1.5f;
 
