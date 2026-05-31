@@ -239,11 +239,11 @@ void App::Draw()
 
     if (current_mouse_state == MouseState::Connecting)
     {
-		auto& inputComponent = circuit.getComponent(connecting_context.sourceComponentID);
-        Vector2 start = inputComponent->getOutputPosition();
+		auto& sourceComponent = circuit.getComponent(connecting_context.sourceComponentID);
+        Vector2 start = sourceComponent->getOutputPosition();
         Vector2 end = GetScreenToWorld2D(GetMousePosition(), camera);
 
-        DrawLineEx(start, end, 3, LogicLevelColors[inputComponent->m_outputValues[0]]);
+        DrawLineEx(start, end, 3, LogicLevelColors[sourceComponent->m_outputValues[0]]);
     }
     else if (current_mouse_state == MouseState::Selecting)
     {
