@@ -248,6 +248,125 @@ class ToggleGate : public Gate {
 	}
 };
 
+class NandGate : public Gate {
+public:
+	constexpr static LogicLevel LookupTable[9] = {
+		//		LOW				HIGH				UNDEFINED
+		LogicLevel::HIGH, LogicLevel::HIGH,	LogicLevel::UNDEFINED, // LOW
+		LogicLevel::HIGH, LogicLevel::LOW,  LogicLevel::UNDEFINED, // HIGH
+		LogicLevel::UNDEFINED, LogicLevel::UNDEFINED, LogicLevel::UNDEFINED // UNDEFINED
+	};
+	NandGate(int id, Vector2 position) : Gate(id, position, 2, 1, 80) { }
+	void evaluate(const std::vector<LogicLevel>& inputs) override {
+		if (inputs.size() < 2) {
+			m_outputValues[0] = LogicLevel::UNDEFINED;
+			return;
+		}
+		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
+	}
+	const char* getLabel() const override { return "NAND"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
+	Vector2 getInputPosition(int input_index) const override
+	{
+		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
+		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+};
+
+class NorGate : public Gate {
+public:
+	constexpr static LogicLevel LookupTable[9] = {
+		//		LOW					HIGH				UNDEFINED
+		LogicLevel::HIGH,		LogicLevel::LOW, LogicLevel::UNDEFINED, // LOW
+		LogicLevel::LOW,		LogicLevel::LOW, LogicLevel::LOW, // HIGH
+		LogicLevel::UNDEFINED,	LogicLevel::LOW, LogicLevel::UNDEFINED // UNDEFINED
+	};
+	NorGate(int id, Vector2 position) : Gate(id, position, 2, 1, 60) { }
+	void evaluate(const std::vector<LogicLevel>& inputs) override {
+		if (inputs.size() < 2) {
+			m_outputValues[0] = LogicLevel::UNDEFINED;
+			return;
+		}
+		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
+	}
+	const char* getLabel() const override { return "NOR"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
+	Vector2 getInputPosition(int input_index) const override
+	{
+		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
+		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+};
+
+class XorGate : public Gate {
+	public:
+	constexpr static LogicLevel LookupTable[9] = {
+		//		LOW					HIGH				UNDEFINED
+		LogicLevel::LOW,	LogicLevel::HIGH,	LogicLevel::UNDEFINED, // LOW
+		LogicLevel::HIGH,	LogicLevel::LOW,	LogicLevel::UNDEFINED, // HIGH
+		LogicLevel::UNDEFINED, LogicLevel::UNDEFINED, LogicLevel::UNDEFINED // UNDEFINED
+	};
+	XorGate(int id, Vector2 position) : Gate(id, position, 2, 1, 60) { }
+	void evaluate(const std::vector<LogicLevel>& inputs) override {
+		if (inputs.size() < 2) {
+			m_outputValues[0] = LogicLevel::UNDEFINED;
+			return;
+		}
+		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
+	}
+	const char* getLabel() const override { return "XOR"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
+	Vector2 getInputPosition(int input_index) const override
+	{
+		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
+		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+};
+
+class XnorGate : public Gate {
+
+	public:
+	constexpr static LogicLevel LookupTable[9] = {
+		//		LOW					HIGH				UNDEFINED
+		LogicLevel::HIGH,	LogicLevel::LOW,	LogicLevel::UNDEFINED, // LOW
+		LogicLevel::LOW,	LogicLevel::HIGH,	LogicLevel::UNDEFINED, // HIGH
+		LogicLevel::UNDEFINED, LogicLevel::UNDEFINED, LogicLevel::UNDEFINED // UNDEFINED
+	};
+	XnorGate(int id, Vector2 position) : Gate(id, position, 2, 1, 60) { }
+	void evaluate(const std::vector<LogicLevel>& inputs) override {
+		if (inputs.size() < 2) {
+			m_outputValues[0] = LogicLevel::UNDEFINED;
+			return;
+		}
+		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
+	}
+	const char* getLabel() const override { return "XNOR"; }
+	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
+	Vector2 getInputPosition(int input_index) const override
+	{
+		float spacing = m_rect.height / (m_inputWireIds.size() + 1);
+		return { m_rect.x - PinRadius * 2, m_rect.y + spacing * (input_index + 1) };
+	}
+	Vector2 getOutputPosition(int output_index = 0) const override
+	{
+		return { m_rect.x + m_rect.width + PinRadius * 2, m_rect.y + m_rect.height / 2 };
+	}
+};
+
+
+
 
 using GateFactory = std::unique_ptr<Gate>(*)(int id, Vector2 position);
 
@@ -258,7 +377,11 @@ std::unique_ptr<Gate> makeGate(int id, Vector2 position) {
 
 inline constexpr GateFactory GateFactories[NodeInfo::COMPONENT_COUNT] = {
 	makeGate<AndGate>,     // AND
+	makeGate<NandGate>,    // NAND
 	makeGate<OrGate>,      // OR
+	makeGate<NorGate>,     // NOR
+	makeGate<XorGate>,     // XOR
+	makeGate<XnorGate>,    // XNOR
 	makeGate<NotGate>,     // NOT
 	makeGate<LedGate>,     // LED
 	makeGate<ToggleGate>,  // TOGGLE

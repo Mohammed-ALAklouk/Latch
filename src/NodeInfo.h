@@ -6,10 +6,15 @@ struct NodeInfo {
 	enum Type
 	{
 		AND,
+		NAND,
 		OR,
+		NOR,
+		XOR,
+		XNOR,
 		NOT,
 		LED,
 		TOGGLE,
+
 		COMPONENT_COUNT
 	};
 

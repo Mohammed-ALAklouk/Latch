@@ -167,8 +167,16 @@ void App::UI()
 
     if (ImGui::Button("AND"))
         selected_component_type = NodeInfo::Type::AND;
+    if (ImGui::Button("NAND"))
+		selected_component_type = NodeInfo::Type::NAND;
     if (ImGui::Button("OR"))
         selected_component_type = NodeInfo::Type::OR;
+	if (ImGui::Button("NOR"))
+		selected_component_type = NodeInfo::Type::NOR;
+    if (ImGui::Button("XOR"))
+		selected_component_type = NodeInfo::Type::XOR;
+	if (ImGui::Button("XNOR"))
+		selected_component_type = NodeInfo::Type::XNOR;
     if (ImGui::Button("NOT"))
         selected_component_type = NodeInfo::Type::NOT;
     if (ImGui::Button("LED"))
