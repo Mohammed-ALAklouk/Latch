@@ -144,9 +144,12 @@ void App::HandleInput()
 
 void App::Update(float deltaTime)
 {
-	auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
-	auto mouse_state_update = mouse_state_update_functions[static_cast<int>(current_mouse_state)];
-	(this->*mouse_state_update)(world_mouse_pos);
+    if (!ImGui::GetIO().WantCaptureMouse)
+    {
+	    auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+	    auto mouse_state_update = mouse_state_update_functions[static_cast<int>(current_mouse_state)];
+	    (this->*mouse_state_update)(world_mouse_pos);
+    }
 
     if (is_simulation_running)
 	{
