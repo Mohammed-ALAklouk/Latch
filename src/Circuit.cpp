@@ -4,9 +4,9 @@ void Circuit::evaluate()
 {
 	for (auto& wire : m_wires)
 	{
-		int source_component_id = wire.Source.ComponentID;
-		int source_output_index = wire.Source.PinIndex; 
-		wire.Value = getComponent(wire.Source.ComponentID).get()->m_outputValues[source_output_index];
+		int source_component_id = wire.Nodes[0].Pin.ComponentID;
+		int source_output_index = wire.Nodes[0].Pin.PinIndex; 
+		wire.Value = getComponent(source_component_id).get()->m_outputValues[source_output_index];
 	}
 	
 	for (auto& component : m_components)
@@ -51,12 +51,7 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 
 	for (auto& wire : m_wires)
 	{
-		auto& source_component = getComponent(wire.Source.ComponentID);
-		auto& destination_component = getComponent(wire.Destination.ComponentID);
-		Vector2 start_pos = source_component->getOutputPosition(wire.Source.PinIndex);
-		Vector2 end_pos = destination_component->getInputPosition(wire.Destination.PinIndex);
-		Color wire_color = LogicLevelColors[wire.Value];
-		DrawLineEx(start_pos, end_pos, 3, wire_color);
+		wire.draw();
 	}
 }
 
@@ -86,10 +81,12 @@ int Circuit::addWire(PinRef source, PinRef destination)
 {
 	int id = m_wire_ids.getNextId();
 	auto& source_component = getComponent(source.ComponentID);
+	auto& destination_component = getComponent(destination.ComponentID);
 	source_component->m_outputWireIds[source.PinIndex] = id;
 	set_component_input_wire(destination.ComponentID, destination.PinIndex, id);
 
-	m_wires.push_back({ source, destination, source_component->m_outputValues[source.PinIndex], id });
+
+	m_wires.push_back(Wire(id, source, source_component->getOutputPosition(source.PinIndex), destination, destination_component->getInputPosition(destination.PinIndex)));
 	m_wire_ids.setIndex(id, m_wires.size() - 1);
 	return id;
 }
@@ -122,14 +119,14 @@ void Circuit::removeWire(int id)
 	int index = m_wire_ids.getIndex(id);
 	if (index != -1) {
 		auto& wire = getWire(id);
-		auto& source_component = getComponent(wire.Source.ComponentID);
+		auto& source_component = getComponent(wire.Nodes[0].Pin.ComponentID);
 		for (auto& output_wire_id : source_component->m_outputWireIds) {
 			if (output_wire_id == id) {
 				output_wire_id = -1;
 			}
 		}
 
-		auto& output_component = getComponent(wire.Destination.ComponentID);
+		auto& output_component = getComponent(wire.Nodes[1].Pin.ComponentID);
 		for (auto& input_wire_id : output_component->m_inputWireIds) {
 			if (input_wire_id == id) {
 				input_wire_id = -1;
