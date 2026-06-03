@@ -453,8 +453,7 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
         Vector2 destination_pos = { world_mouse_pos.x / cell_size * cell_size, world_mouse_pos.y / cell_size * cell_size };
 
         if (connecting_context.type == ConnectingContext::JUNCTION) {
-            auto& source_wire = circuit.getWire(connecting_context.wireID);
-            source_wire.extendTo(connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
+            circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
         }
         else {
 		    auto source_pos = circuit.getComponent(connecting_context.sourceComponentID)->getOutputPosition();

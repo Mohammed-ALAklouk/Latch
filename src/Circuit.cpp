@@ -181,3 +181,14 @@ void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 	}
 	*/
 }
+
+int Circuit::extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos)
+{
+	auto& wire = getWire(wireID);
+	wire.extendTo(sourceNodeID, targetPin, targetPos);
+	if (targetPin.ComponentID != -1) {
+		auto& target_component = getComponent(targetPin.ComponentID);
+		target_component->m_inputWireIds[targetPin.PinIndex] = wireID;
+	}
+	return wireID;
+}

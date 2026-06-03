@@ -23,6 +23,7 @@ public:
 	void removeWire(int id);
 	void selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const;
 	void restoreComponent(int id, NodeInfo nodeInfo);
+	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos);
 
 	std::unique_ptr<Gate>& getComponent(int id) {
 		int index = m_component_ids.getIndex(id);
@@ -33,6 +34,7 @@ public:
 		int index = m_wire_ids.getIndex(id);
 		return m_wires[index];
 	}
+
 
 	std::vector<std::unique_ptr<Gate>> m_components;
 	std::vector<Wire> m_wires;
