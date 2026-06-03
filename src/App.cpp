@@ -14,7 +14,7 @@ App::App()
 
     panning_context = { 0, 0 };
     dragging_context = { {0, 0} };
-    connecting_context = { -1, { -1, -1 } };
+    connecting_context = {ConnectingContext::PIN, -1, -1, -1, {-1, -1}};
     
     camera = { 0 };
     camera.offset = Vector2{ window_width / 2.0f, window_height / 2.0f };
@@ -103,6 +103,9 @@ void App::HandleInput()
             }
         }
         if (IsKeyPressed(KEY_V)) {
+			// TODO: redo the pasting logic to support the new wire representation
+
+            /*
             std::vector<int> new_ids;
 			std::vector<NodeInfo> pasted_components = copy_of_components;
 			auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
@@ -130,6 +133,7 @@ void App::HandleInput()
 
             action_manager.addAction<PasteAction>(new_ids, pasted_components);
             selected_component_ids = new_ids;
+            */
 		}
 
         if (IsKeyPressed(KEY_Z)) {
@@ -239,11 +243,26 @@ void App::Draw()
 
     if (current_mouse_state == MouseState::Connecting)
     {
-		auto& sourceComponent = circuit.getComponent(connecting_context.sourceComponentID);
-        Vector2 start = sourceComponent->getOutputPosition();
+        Vector2 start;
+		Color line_color;
+        if (connecting_context.type == connecting_context.PIN)
+        {
+		    auto& sourceComponent = circuit.getComponent(connecting_context.sourceComponentID);
+            start = sourceComponent->getOutputPosition();
+			line_color = LogicLevelColors[sourceComponent->m_outputValues[0]];
+        } 
+        else {
+            auto& sourceWire = circuit.getWire(connecting_context.wireID);
+			start = sourceWire.getNodePosition(connecting_context.sourceNodeID);
+			line_color = LogicLevelColors[sourceWire.Value];
+        }
+
+        
+
+
         Vector2 end = GetScreenToWorld2D(GetMousePosition(), camera);
 
-        DrawLineEx(start, end, 3, LogicLevelColors[sourceComponent->m_outputValues[0]]);
+        DrawLineEx(start, end, 3, line_color);
     }
     else if (current_mouse_state == MouseState::Selecting)
     {
@@ -311,6 +330,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 
 
         bool clicked_on_output_pin = false;
+		bool clicked_on_wire = false;
         bool clicked_on_component = false;
 
         for (auto& component : circuit.m_components) {
@@ -326,6 +346,21 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         }
 
         if (clicked_on_output_pin) return;
+        
+        for (auto& wire : circuit.m_wires) {
+			int node_index = wire.collidesWithNode(world_mouse_pos);
+            if (node_index != -1) {
+				connecting_context.type = ConnectingContext::JUNCTION;
+				connecting_context.wireID = wire.ID;
+				connecting_context.sourceNodeID = wire.Nodes[node_index].ID;
+				current_mouse_state = MouseState::Connecting;
+
+                clicked_on_wire = true;
+                break;
+            }
+		}
+
+		if (clicked_on_wire) return;
 
         for (auto& component : circuit.m_components) {
             if (component->containsPoint(world_mouse_pos)) {
@@ -414,14 +449,27 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 
 void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 {
-    if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
-        if (connecting_context.targetPin.ComponentID != -1) {
-            
-            int id = circuit.addWire({ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);		    
-            action_manager.addAction<WirePlacedAction>(id, PinRef{ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
+    if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {    
+        Vector2 destination_pos = { world_mouse_pos.x / cell_size * cell_size, world_mouse_pos.y / cell_size * cell_size };
+
+        if (connecting_context.type == ConnectingContext::JUNCTION) {
+            auto& source_wire = circuit.getWire(connecting_context.wireID);
+            source_wire.extendTo(connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
+        }
+        else {
+		    auto source_pos = circuit.getComponent(connecting_context.sourceComponentID)->getOutputPosition();
+            int id = circuit.addWire(
+                { connecting_context.sourceComponentID, 0 }, 
+                source_pos, 
+                connecting_context.targetPin, 
+                destination_pos);		    
         }
 
-        connecting_context = { -1, { -1, -1 } };
+        
+		// TODO: Store more info in the action to avoid having to search for the wire later
+        //action_manager.addAction<WirePlacedAction>(id, PinRef{ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
+
+        connecting_context = { ConnectingContext::PIN, -1, -1, -1, { -1, -1 } };
         current_mouse_state = MouseState::Idle;
         return;
     }

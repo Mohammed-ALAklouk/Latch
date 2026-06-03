@@ -38,7 +38,8 @@ class WirePlacedAction : public Action {
 		Circuit.removeWire(wireID);
 	}
 	void redo(Circuit& Circuit) override {
-		wireID = Circuit.addWire(input, output);
+		// TODO: Redo to support the new wire representation
+		//wireID = Circuit.addWire(input, output);
 	}
 
 	int wireID;
@@ -90,7 +91,10 @@ class WireDeletedAction : public Action {
 	public:
 	WireDeletedAction(PinRef input, PinRef output, int wireID) : input(input), output(output), wireID(wireID) {}
 	void undo(Circuit& Circuit) override {
-		wireID = Circuit.addWire(input, output);
+		
+		// TODO: Redo to support the new wire representation
+
+		//wireID = Circuit.addWire(input, output);
 	}
 
 	void redo(Circuit& Circuit) override {

@@ -18,7 +18,7 @@ public:
 	void draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID);
 	int addComponent(NodeInfo::Type type, Vector2 position);
 	void set_component_input_wire(int componentID, int input_index, int wire_ID);
-	int addWire(PinRef input, PinRef output);
+	int addWire(PinRef input, Vector2 inputPos, PinRef output, Vector2 outputPos);
 	void removeComponent(int id);
 	void removeWire(int id);
 	void selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const;

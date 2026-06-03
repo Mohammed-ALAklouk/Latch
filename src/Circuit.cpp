@@ -77,16 +77,23 @@ void Circuit::set_component_input_wire(int componentID, int input_index, int wir
 	}
 }
 
-int Circuit::addWire(PinRef source, PinRef destination)
+int Circuit::addWire(PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destinationPos)
 {
+	if (source.ComponentID == -1) {
+		return -1;
+	}
+
 	int id = m_wire_ids.getNextId();
 	auto& source_component = getComponent(source.ComponentID);
-	auto& destination_component = getComponent(destination.ComponentID);
 	source_component->m_outputWireIds[source.PinIndex] = id;
-	set_component_input_wire(destination.ComponentID, destination.PinIndex, id);
+
+	if (destination.ComponentID == -1) {
+		auto& destination_component = getComponent(destination.ComponentID);
+		set_component_input_wire(destination.ComponentID, destination.PinIndex, id);
+	}
 
 
-	m_wires.push_back(Wire(id, source, source_component->getOutputPosition(source.PinIndex), destination, destination_component->getInputPosition(destination.PinIndex)));
+	m_wires.push_back(Wire(id, source, sourcePos, destination, destinationPos));
 	m_wire_ids.setIndex(id, m_wires.size() - 1);
 	return id;
 }
@@ -156,6 +163,8 @@ void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& 
 
 void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 {
+	// TODO: Restore wires as well when restoring a component
+	/*
 	if (nodeInfo.type < 0 || nodeInfo.type >= NodeInfo::COMPONENT_COUNT) return;
 
 	m_components.push_back(GateFactories[nodeInfo.type](id, nodeInfo.position));
@@ -170,4 +179,5 @@ void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 
 		int wireId = addWire({ nodeInfo.input_components[i], 0 }, { id, i });
 	}
+	*/
 }

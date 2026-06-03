@@ -20,6 +20,10 @@ struct DraggingContext {
 };
 
 struct ConnectingContext {
+	enum ConnectionType {PIN, JUNCTION} type;
+	int sourceNodeID;
+	int wireID;
+	
 	int sourceComponentID;
 	PinRef targetPin;
 };
