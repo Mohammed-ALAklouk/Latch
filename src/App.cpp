@@ -39,12 +39,10 @@ void App::HandleInput()
     auto zoom_change = GetMouseWheelMove();
     if (zoom_change)
     {
-        int index = current_zoom_index + zoom_change;
-        int max_zoom_index = sizeof(zoom_levels) / sizeof(zoom_levels[0]);
-        if (index >= 0 && index < max_zoom_index) {
-            current_zoom_index = index;
-            camera.zoom = zoom_levels[current_zoom_index];
-        }
+		current_zoom += zoom_change * zoom_sensitivity;
+		if (current_zoom < min_zoom) current_zoom = min_zoom;
+		else if (current_zoom > max_zoom) current_zoom = max_zoom;
+        camera.zoom = current_zoom;
     }
 
     if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_RIGHT) && !gate_placed)
@@ -416,8 +414,8 @@ void App::UpdatePanningState(const Vector2& world_mouse_pos)
     };
 
     camera.target = Vector2{
-        panning_context.initial_camera_target.x + (delta.x / zoom_levels[current_zoom_index]),
-        panning_context.initial_camera_target.y + (delta.y / zoom_levels[current_zoom_index])
+        panning_context.initial_camera_target.x + (delta.x / current_zoom),
+        panning_context.initial_camera_target.y + (delta.y / current_zoom)
     };
 }
 

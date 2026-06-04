@@ -84,9 +84,13 @@ private:
 	const std::string mouse_state_names[5] = { "Idle", "Panning", "Dragging", "Connecting", "Selecting" };
 
 	Camera2D camera;
-	const float zoom_levels[6] = { 0.33f, 0.45f, 0.60f, 0.75f, 0.90f, 1.00f };
-	int current_zoom_index = 5; 
+	
+	const float min_zoom = 0.3f;
+	const float max_zoom = 3.0f;
+	float zoom_sensitivity = 0.1f;
+	float current_zoom = 1.0f;
 
+	
 	MouseState current_mouse_state = MouseState::Idle;
 	NodeInfo::Type selected_component_type = NodeInfo::Type::AND;
 
