@@ -1,6 +1,7 @@
 #pragma once
 #include <math.h>
 #include <string>
+#include <unordered_map>
 
 #include "raylib.h"
 #include "rlImGui.h"
@@ -110,7 +111,7 @@ private:
 
 	std::vector <int> selected_component_ids;
 	int hovered_component_id = -1;
-	int selected_wire_id = -1;
+	std::unordered_map<int, std::vector<int>> selected_wire_nodes;
 
 	bool is_simulation_running = false;
 	float ticks_per_second = 0.5f;

@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include "Gate.h"
 #include "Wire.h"
 #include "IdManager.h"
@@ -15,7 +16,7 @@ public:
 	void evaluate();
 	std::vector<LogicLevel> getComponentInputValues(std::unique_ptr<Gate>& component);
 	void evaluateComponent(std::unique_ptr<Gate>& component);
-	void draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID);
+	void draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID, std::unordered_map<int, std::vector<int>>& selectedWireIDs);
 	int addComponent(NodeInfo::Type type, Vector2 position);
 	void set_component_input_wire(int componentID, int input_index, int wire_ID);
 	int addWire(PinRef input, Vector2 inputPos, PinRef output, Vector2 outputPos);

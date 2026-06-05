@@ -2,6 +2,8 @@
 #include "Pin.h"
 #include "IdManager.h"
 
+#include <raylib.h>
+
 struct WireNode
 {
 	PinRef Pin;
@@ -23,26 +25,9 @@ public:
 	Wire(int id, PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destPos)
 		: ID(id), Value(LogicLevel::UNDEFINED)
 	{
-		addNode(source, sourcePos);
+		int sourceNodeID = addNode(source, sourcePos);
 
-		int x_diff = destPos.x - sourcePos.x;
-		int y_diff = destPos.y - sourcePos.y;
-
-		if (!x_diff || !y_diff) {
-			addNode(destination, destPos);
-			Segments.push_back({ 0, 1 });
-			return;
-		}
-
-		Vector2 junction_pos = { destPos.x, sourcePos.y };
-		if (x_diff > y_diff)
-			junction_pos = { sourcePos.x, destPos.y };
-		
-		addNode({-1, -1}, junction_pos);
-		addNode(destination, destPos);
-
-		Segments.push_back({ 0, 1 });
-		Segments.push_back({ 1, 2 });
+		extendTo(sourceNodeID, destination, destPos);
 	}
 
 	int addNode(PinRef pin, Vector2 pos)
@@ -50,6 +35,7 @@ public:
 		int new_node_id = node_id_manager.getNextId();
 		auto type = pin.ComponentID != -1 ? WireNode::PIN : WireNode::JUNCTION;
 		Nodes.push_back({ pin, pos, type, new_node_id });
+		node_id_manager.setIndex(new_node_id, Nodes.size() - 1);
 		return new_node_id;
 	}
 
@@ -67,18 +53,22 @@ public:
 	}
 
 
-	void draw() {
+	void draw(std::vector<int>& selectedNodeIDs) {
 		Color wire_color = LogicLevelColors[Value];
+		Color selected_color = { 0, 150, 255, 255 };
 		
 		for (auto& segment: Segments)
 		{
-			Vector2 start_pos = Nodes[segment.StartID].Position;
-			Vector2 end_pos = Nodes[segment.EndID].Position;
+			Vector2 start_pos = Nodes[node_id_manager.getIndex(segment.StartID)].Position;
+			Vector2 end_pos = Nodes[node_id_manager.getIndex(segment.EndID)].Position;
 			DrawLineEx(start_pos, end_pos, 3, wire_color);
 		}
 
 		for (auto& node : Nodes) {
 			if (node.Type == WireNode::JUNCTION) {
+				bool selected = std::find(selectedNodeIDs.begin(), selectedNodeIDs.end(), node.ID) != selectedNodeIDs.end();
+				wire_color = LogicLevelColors[Value];
+				if (selected) wire_color = selected_color;
 				DrawCircleV(node.Position, 5, wire_color);
 			} else
 				{
@@ -118,6 +108,20 @@ public:
 
 		Segments.push_back({ sourceNodeID, junctionID });
 		Segments.push_back({ junctionID, destID });
+	}
+
+	static WireNode getExtentionResults(Vector2 sourcePos, Vector2 destPos)
+	{
+		int x_diff = destPos.x - sourcePos.x;
+		int y_diff = destPos.y - sourcePos.y;
+		if (!x_diff || !y_diff) {
+			return { { -1, -1 }, destPos, WireNode::PIN, -1 };
+		}
+		
+		if (x_diff > y_diff)
+			return { { -1, -1 }, { sourcePos.x, destPos.y }, WireNode::JUNCTION, 1 };
+
+		return { { -1, -1 }, { destPos.x, sourcePos.y }, WireNode::JUNCTION, 1 };
 	}
 
 

@@ -38,7 +38,7 @@ void Circuit::evaluateComponent(std::unique_ptr<Gate>& component)
 	component->evaluate(input_values);
 }
 
-void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID)
+void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID, std::unordered_map<int, std::vector<int>>& selectedWireIDs)
 {
 	for (auto& component : m_components)
 	{
@@ -51,7 +51,10 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 
 	for (auto& wire : m_wires)
 	{
-		wire.draw();
+		if(selectedWireIDs.find(wire.ID) != selectedWireIDs.end())
+			wire.draw(selectedWireIDs[wire.ID]);
+		else 
+			wire.draw(std::vector<int>());
 	}
 }
 
@@ -87,7 +90,7 @@ int Circuit::addWire(PinRef source, Vector2 sourcePos, PinRef destination, Vecto
 	auto& source_component = getComponent(source.ComponentID);
 	source_component->m_outputWireIds[source.PinIndex] = id;
 
-	if (destination.ComponentID == -1) {
+	if (destination.ComponentID != -1) {
 		auto& destination_component = getComponent(destination.ComponentID);
 		set_component_input_wire(destination.ComponentID, destination.PinIndex, id);
 	}
@@ -100,6 +103,9 @@ int Circuit::addWire(PinRef source, Vector2 sourcePos, PinRef destination, Vecto
 
 void Circuit::removeComponent(int id)
 {
+	/*
+	* TODO: Rewrite to use the new wire system
+	* 
 	int index = m_component_ids.getIndex(id);
 	if (index != -1) {
 		auto& component = getComponent(id);
@@ -118,7 +124,7 @@ void Circuit::removeComponent(int id)
 
 		m_components.pop_back();
 		m_component_ids.releaseId(id);
-	}
+	}*/
 }
 
 void Circuit::removeWire(int id)

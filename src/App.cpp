@@ -68,13 +68,11 @@ void App::HandleInput()
             circuit.removeComponent(id);
         }
 
-        if (selected_wire_id != -1) {
-            circuit.removeWire(selected_wire_id);
-        }
+        // TODO: implement node deletion
+       
         
 
         selected_component_ids.clear();
-        selected_wire_id = -1;
     }
 
     if (IsKeyDown(KEY_LEFT_CONTROL))
@@ -237,13 +235,16 @@ void App::Draw()
 
     DrawGrid();
 
-	circuit.draw(selected_component_ids, hovered_component_id);
+	circuit.draw(selected_component_ids, hovered_component_id, selected_wire_nodes);
 
     if (current_mouse_state == MouseState::Connecting)
     {
         Vector2 start;
 		Color line_color;
-        if (connecting_context.type == connecting_context.PIN)
+		auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+        Vector2 destination_pos = { round(world_mouse_pos.x / cell_size) * cell_size, round(world_mouse_pos.y / cell_size) * cell_size };
+
+        if (connecting_context.type == ConnectingContext::ConnectionType::PIN)
         {
 		    auto& sourceComponent = circuit.getComponent(connecting_context.sourceComponentID);
             start = sourceComponent->getOutputPosition();
@@ -255,12 +256,18 @@ void App::Draw()
 			line_color = LogicLevelColors[sourceWire.Value];
         }
 
-        
+        auto junction_node = Wire::getExtentionResults(start, destination_pos);
 
+        if (junction_node.ID == 1) {
+			DrawLineEx(start, junction_node.Position, 3, line_color);
+			DrawLineEx(junction_node.Position, destination_pos, 3, line_color);
+			DrawCircleV(junction_node.Position, 5, line_color);
+        }
+        else {
+            DrawLineEx(start, destination_pos, 3, line_color);
+        }
+		
 
-        Vector2 end = GetScreenToWorld2D(GetMousePosition(), camera);
-
-        DrawLineEx(start, end, 3, line_color);
     }
     else if (current_mouse_state == MouseState::Selecting)
     {
@@ -346,12 +353,19 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         if (clicked_on_output_pin) return;
         
         for (auto& wire : circuit.m_wires) {
-			int node_index = wire.collidesWithNode(world_mouse_pos);
-            if (node_index != -1) {
+			int nodeID = wire.collidesWithNode(world_mouse_pos);
+            if (nodeID != -1) {
 				connecting_context.type = ConnectingContext::JUNCTION;
 				connecting_context.wireID = wire.ID;
-				connecting_context.sourceNodeID = wire.Nodes[node_index].ID;
+				connecting_context.sourceNodeID = nodeID;
 				current_mouse_state = MouseState::Connecting;
+
+                selected_wire_nodes.clear();
+
+                if (selected_wire_nodes.find(wire.ID) == selected_wire_nodes.end())
+                    selected_wire_nodes[wire.ID] = std::vector<int>();
+
+                selected_wire_nodes[wire.ID].push_back(nodeID);
 
                 clicked_on_wire = true;
                 break;
@@ -380,7 +394,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         if (clicked_on_component) return;
 
         selected_component_ids.clear();
-        selected_wire_id = -1;
+        selected_wire_nodes.clear();
         current_mouse_state = MouseState::Panning;
         panning_context.initial_pos = GetMousePosition();
         panning_context.initial_camera_target = camera.target;
@@ -448,10 +462,12 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {    
-        Vector2 destination_pos = { world_mouse_pos.x / cell_size * cell_size, world_mouse_pos.y / cell_size * cell_size };
+        Vector2 destination_pos = { round(world_mouse_pos.x / cell_size) * cell_size, round(world_mouse_pos.y / cell_size) * cell_size };
 
         if (connecting_context.type == ConnectingContext::JUNCTION) {
-            circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
+			auto& sourceWire = circuit.getWire(connecting_context.wireID);
+            if (sourceWire.collidesWithNode(destination_pos) == -1)
+                circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
         }
         else {
 		    auto source_pos = circuit.getComponent(connecting_context.sourceComponentID)->getOutputPosition();
