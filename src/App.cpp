@@ -68,10 +68,13 @@ void App::HandleInput()
             circuit.removeComponent(id);
         }
 
-        // TODO: implement node deletion
-       
-        
+        for (auto& pair : selected_wire_nodes) {
+            int wireID = pair.first;
+            for (auto nodeID: pair.second)
+                circuit.removeWireNode(wireID, nodeID);
+        }
 
+        selected_wire_nodes.clear();
         selected_component_ids.clear();
     }
 

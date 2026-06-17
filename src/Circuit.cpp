@@ -158,6 +158,16 @@ void Circuit::removeWire(int id)
 	}
 }
 
+void Circuit::removeWireNode(int wireID, int nodeID)
+{
+	auto& wire = getWire(wireID);
+	wire.removeNode(nodeID);
+
+	if (!wire.Nodes.size())
+		removeWire(wireID);
+}
+
+
 void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const
 {
 	for (const auto& component : m_components) {

@@ -124,6 +124,45 @@ public:
 		return { { -1, -1 }, { destPos.x, sourcePos.y }, WireNode::JUNCTION, 1 };
 	}
 
+	// removes the node and everything connected to it
+	void removeNode(int id)
+	{
+		std::vector<int> nodes_to_delete = { id };
+
+		for (int i  = 0; i < nodes_to_delete.size(); i++)
+		{
+			int currID = nodes_to_delete[i];
+			for (auto segment = Segments.begin(); segment != Segments.end();) {
+				if (segment->StartID == currID) {
+					if (std::find(nodes_to_delete.begin(), nodes_to_delete.end(), segment->EndID) == nodes_to_delete.end())
+						nodes_to_delete.push_back(segment->EndID);
+					Segments.erase(segment);
+				}
+				else if (segment->EndID == currID) {
+					if (std::find(nodes_to_delete.begin(), nodes_to_delete.end(), segment->StartID) == nodes_to_delete.end())
+						nodes_to_delete.push_back(segment->StartID);
+					Segments.erase(segment);
+				}
+				else
+					segment++;
+			}
+		}
+
+		for (auto nodeID : nodes_to_delete) {
+			deleteNode(nodeID);
+		}
+		
+	}
+
+	// removes only the given node
+	void deleteNode(int id) {
+		int index = node_id_manager.getIndex(id);
+		Nodes[index] = *(Nodes.end() - 1);
+		Nodes.pop_back();
+		node_id_manager.releaseId(id);
+		node_id_manager.setIndex(Nodes[index].ID, index);
+	}
+
 
 	LogicLevel Value;
 	int ID;

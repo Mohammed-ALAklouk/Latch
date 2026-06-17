@@ -22,6 +22,7 @@ public:
 	int addWire(PinRef input, Vector2 inputPos, PinRef output, Vector2 outputPos);
 	void removeComponent(int id);
 	void removeWire(int id);
+	void removeWireNode(int wireID, int nodeID);
 	void selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const;
 	void restoreComponent(int id, NodeInfo nodeInfo);
 	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos);
