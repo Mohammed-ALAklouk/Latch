@@ -127,36 +127,71 @@ public:
 	// removes the node and everything connected to it
 	void removeNode(int id)
 	{
-		std::vector<int> nodes_to_delete = { id };
+		if (node_id_manager.getIndex(id) == -1) return;
 
-		for (int i  = 0; i < nodes_to_delete.size(); i++)
-		{
-			int currID = nodes_to_delete[i];
-			for (auto segment = Segments.begin(); segment != Segments.end();) {
-				if (segment->StartID == currID) {
-					if (std::find(nodes_to_delete.begin(), nodes_to_delete.end(), segment->EndID) == nodes_to_delete.end())
-						nodes_to_delete.push_back(segment->EndID);
-					Segments.erase(segment);
-				}
-				else if (segment->EndID == currID) {
-					if (std::find(nodes_to_delete.begin(), nodes_to_delete.end(), segment->StartID) == nodes_to_delete.end())
-						nodes_to_delete.push_back(segment->StartID);
-					Segments.erase(segment);
-				}
-				else
-					segment++;
-			}
+		deleteNode(id);
+		for (auto seg = Segments.begin(); seg != Segments.end();) {
+			if (seg->StartID == id || seg->EndID == id)
+				Segments.erase(seg);
+			else
+				seg++;
 		}
+		if (Nodes.size() == 0) return;
 
-		for (auto nodeID : nodes_to_delete) {
-			deleteNode(nodeID);
-		}
+		std::vector<int> visitedNodes;
 		
+		std::vector<int> curr_nodes_to_check = { Nodes[0].ID };
+		std::vector<int> next_nodes_to_check;
+
+		while (curr_nodes_to_check.size()) {
+			int nodeID = curr_nodes_to_check[0];
+
+			for (auto& seg: Segments) {
+				if (seg.StartID == nodeID) {
+					bool is_visited = std::find(visitedNodes.begin(), visitedNodes.end(), seg.EndID) != visitedNodes.end();
+					if (!is_visited) next_nodes_to_check.push_back(seg.EndID);
+				}
+				else if (seg.EndID == nodeID) {
+					bool is_visited = std::find(visitedNodes.begin(), visitedNodes.end(), seg.StartID) != visitedNodes.end();
+					if (!is_visited) next_nodes_to_check.push_back(seg.StartID);
+				}
+			}
+
+			visitedNodes.push_back(nodeID);
+			curr_nodes_to_check.erase(curr_nodes_to_check.begin());
+			if (curr_nodes_to_check.size() == 0) {
+				curr_nodes_to_check = next_nodes_to_check;
+				next_nodes_to_check.clear();
+			}
+
+		}
+
+		for (auto& node = Nodes.begin(); node != Nodes.end();) {
+			bool should_delete = std::find(visitedNodes.begin(), visitedNodes.end(), node->ID) == visitedNodes.end();
+			if (should_delete)
+				Nodes.erase(node);
+			else
+				node++;
+		}
+
+		for (auto& seg = Segments.begin(); seg != Segments.end();) {
+			bool startVisited = std::find(visitedNodes.begin(), visitedNodes.end(), seg->StartID) != visitedNodes.end();
+			bool endVisited = std::find(visitedNodes.begin(), visitedNodes.end(), seg->EndID) != visitedNodes.end();
+
+			if (!startVisited && !endVisited)
+				Segments.erase(seg);
+			else
+				seg++;
+		}
+
+		if (Segments.size() == 0) Nodes.clear();
 	}
 
 	// removes only the given node
 	void deleteNode(int id) {
 		int index = node_id_manager.getIndex(id);
+		if (index == -1) return;
+
 		Nodes[index] = *(Nodes.end() - 1);
 		Nodes.pop_back();
 		node_id_manager.releaseId(id);

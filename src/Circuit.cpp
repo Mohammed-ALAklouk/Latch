@@ -163,8 +163,8 @@ void Circuit::removeWireNode(int wireID, int nodeID)
 	auto& wire = getWire(wireID);
 	wire.removeNode(nodeID);
 
-	if (!wire.Nodes.size())
-		removeWire(wireID);
+	//if (wire.Segments.size() == 0)
+	//	removeWire(wireID);
 }
 
 
