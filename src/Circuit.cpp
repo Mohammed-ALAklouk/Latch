@@ -168,13 +168,26 @@ void Circuit::removeWireNode(int wireID, int nodeID)
 }
 
 
-void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const
+void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
+	std::unordered_map<int, std::vector<int>>& selectedWireNodes) const
 {
 	for (const auto& component : m_components) {
 		if (CheckCollisionRecs(component->m_rect, selectionRect)) {
 			selectedComponentIDs.push_back(component->m_id);
 		}
 	}
+
+	for (const auto& wire : m_wires) {
+		for (const auto& node : wire.Nodes) {
+			if (CheckCollisionCircleRec(node.Position, 10, selectionRect)) {
+				if (selectedWireNodes.find(wire.ID) == selectedWireNodes.end())
+					selectedWireNodes[wire.ID] = {};
+				
+				selectedWireNodes[wire.ID].push_back(node.ID);
+			}
+		}
+	}
+
 }
 
 void Circuit::restoreComponent(int id, NodeInfo nodeInfo)

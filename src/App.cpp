@@ -527,7 +527,7 @@ void App::UpdateSelectingState(const Vector2& world_mouse_pos)
     selecting_context.selectionRect = { topLeft.x, topLeft.y, size.x, size.y };
 
     selected_component_ids.clear();
-    circuit.selectComponentsInArea(selecting_context.selectionRect, selected_component_ids);
+    circuit.selectComponentsInArea(selecting_context.selectionRect, selected_component_ids, selected_wire_nodes);
 }
 
 std::vector<NodeInfo> App::getNodeInfoCopy(std::vector<int>& ids)

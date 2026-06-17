@@ -23,7 +23,8 @@ public:
 	void removeComponent(int id);
 	void removeWire(int id);
 	void removeWireNode(int wireID, int nodeID);
-	void selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs) const;
+	void selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
+		std::unordered_map<int, std::vector<int>>& selectedWireNodes) const;
 	void restoreComponent(int id, NodeInfo nodeInfo);
 	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos);
 
