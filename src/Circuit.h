@@ -16,7 +16,8 @@ public:
 	void evaluate();
 	std::vector<LogicLevel> getComponentInputValues(std::unique_ptr<Gate>& component);
 	void evaluateComponent(std::unique_ptr<Gate>& component);
-	void draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID, std::unordered_map<int, std::vector<int>>& selectedWireIDs);
+	void draw(const std::vector<int>& selectedComponentIDs, const int hoveredComponentID,
+		const std::unordered_map<int, std::vector<int>>& selectedWireIDs, const std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments);
 	int addComponent(NodeInfo::Type type, Vector2 position);
 	void set_component_input_wire(int componentID, int input_index, int wire_ID);
 	int addWire(PinRef input, Vector2 inputPos, PinRef output, Vector2 outputPos);

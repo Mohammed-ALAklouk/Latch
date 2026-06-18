@@ -38,7 +38,8 @@ void Circuit::evaluateComponent(std::unique_ptr<Gate>& component)
 	component->evaluate(input_values);
 }
 
-void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComponentID, std::unordered_map<int, std::vector<int>>& selectedWireIDs)
+void Circuit::draw(const std::vector<int>& selectedComponentIDs, const int hoveredComponentID, 
+	const std::unordered_map<int, std::vector<int>>& selectedWireIDs, const std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments)
 {
 	for (auto& component : m_components)
 	{
@@ -51,10 +52,9 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, int hoveredComp
 
 	for (auto& wire : m_wires)
 	{
-		if(selectedWireIDs.find(wire.ID) != selectedWireIDs.end())
-			wire.draw(selectedWireIDs[wire.ID]);
-		else 
-			wire.draw(std::vector<int>());
+		std::vector<int> selectedNodes = selectedWireIDs.find(wire.ID) != selectedWireIDs.end() ? selectedWireIDs.at(wire.ID) : std::vector<int>();
+		std::vector<WireSegment> selectedSegments = selectedWireSegments.find(wire.ID) != selectedWireSegments.end() ? selectedWireSegments.at(wire.ID) : std::vector<WireSegment>();
+		wire.draw(selectedNodes,  selectedSegments);
 	}
 }
 

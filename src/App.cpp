@@ -73,8 +73,7 @@ void App::HandleInput()
             circuit.removeWireNodes(wireID, pair.second);
         }
 
-        selected_wire_nodes.clear();
-        selected_component_ids.clear();
+		clearSelection();
     }
 
     if (IsKeyDown(KEY_LEFT_CONTROL))
@@ -254,7 +253,7 @@ void App::Draw()
 
     DrawGrid();
 
-	circuit.draw(selected_component_ids, hovered_component_id, selected_wire_nodes);
+	circuit.draw(selected_component_ids, hovered_component_id, selected_wire_nodes, selected_wire_segments);
 
     if (current_mouse_state == MouseState::Connecting)
     {
@@ -349,7 +348,8 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         }
 
 
-		bool clicked_on_wire = false;
+		bool clicked_on_wire_node = false;
+		bool clicked_on_wire_segment = false;
         bool clicked_on_output_pin = false;
         bool clicked_on_component = false;
 
@@ -361,20 +361,35 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
                 connecting_context.sourceNodeID = nodeID;
                 current_mouse_state = MouseState::Connecting;
 
-                selected_wire_nodes.clear();
-                selected_component_ids.clear();
+				clearSelection();
 
                 if (selected_wire_nodes.find(wire.ID) == selected_wire_nodes.end())
                     selected_wire_nodes[wire.ID] = std::vector<int>();
 
                 selected_wire_nodes[wire.ID].push_back(nodeID);
 
-                clicked_on_wire = true;
+                clicked_on_wire_node = true;
                 break;
             }
         }
 
-        if (clicked_on_wire) return;
+        if (clicked_on_wire_node) return;
+
+        for (auto& wire : circuit.m_wires) {
+            WireSegment segment = wire.findSegmentAt(world_mouse_pos);
+            if (segment.first != -1) {
+                clearSelection();
+
+                if (selected_wire_nodes.find(wire.ID) == selected_wire_nodes.end())
+                    selected_wire_nodes[wire.ID] = std::vector<int>();
+                
+				selected_wire_segments[wire.ID].push_back(segment);
+                clicked_on_wire_segment = true;
+                break;
+            }
+		}
+
+		if (clicked_on_wire_segment) return;
 
         for (auto& component : circuit.m_components) {
             if (component->outputPinContainsPoint(world_mouse_pos) != -1)
@@ -399,8 +414,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 
                 if (std::find(selected_component_ids.begin(), selected_component_ids.end(), component->m_id) == selected_component_ids.end())
                 {
-                    selected_component_ids.clear();
-					selected_wire_nodes.clear();
+					clearSelection();
                     selected_component_ids.push_back(component->m_id);
 
                 }
@@ -411,8 +425,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 
         if (clicked_on_component) return;
 
-        selected_component_ids.clear();
-        selected_wire_nodes.clear();
+		clearSelection();
         current_mouse_state = MouseState::Panning;
         panning_context.initial_pos = GetMousePosition();
         panning_context.initial_camera_target = camera.target;
@@ -544,7 +557,7 @@ void App::UpdateSelectingState(const Vector2& world_mouse_pos)
     };
     selecting_context.selectionRect = { topLeft.x, topLeft.y, size.x, size.y };
 
-    selected_component_ids.clear();
+	clearSelection();
     circuit.selectComponentsInArea(selecting_context.selectionRect, selected_component_ids, selected_wire_nodes);
 }
 
@@ -606,6 +619,13 @@ std::vector<NodeInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
         nodes.push_back(node_info);
     }
     return nodes;
+}
+
+void App::clearSelection()
+{
+    selected_component_ids.clear();
+    selected_wire_nodes.clear();
+	selected_wire_segments.clear();
 }
 
 void App::Run()

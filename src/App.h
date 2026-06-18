@@ -67,6 +67,7 @@ private:
 	std::vector<NodeInfo > getNodeInfoCopy(std::vector<int>& ids);
 	std::vector<NodeInfo > getNodeInfoDeletion(std::vector<int>& ids);
 
+	void clearSelection();
 	
 	int cell_size = CELL_SIZE;
 	int window_width = 800;
@@ -112,6 +113,7 @@ private:
 	std::vector <int> selected_component_ids;
 	int hovered_component_id = -1;
 	std::unordered_map<int, std::vector<int>> selected_wire_nodes;
+	std::unordered_map<int, std::vector<WireSegment>> selected_wire_segments;
 
 	bool is_simulation_running = false;
 	float ticks_per_second = 0.5f;

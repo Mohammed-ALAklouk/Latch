@@ -33,13 +33,35 @@ int Wire::findNodeAt(Vector2 pos) const
 	return -1;
 }
 
-void Wire::draw(const std::vector<int>& selectedNodeIDs) const {
+WireSegment Wire::findSegmentAt(Vector2 pos) const
+{
+	for (const auto& segment : Segments) {
+		Vector2 start_pos = Nodes[node_id_manager.getIndex(segment.first)].Position;
+		Vector2 end_pos = Nodes[node_id_manager.getIndex(segment.second)].Position;
+		Rectangle rect;
+		if (start_pos.x == end_pos.x) 
+			rect = { start_pos.x - SegmentThickness / 2, std::min(start_pos.y, end_pos.y), SegmentThickness, std::abs(end_pos.y - start_pos.y) };
+		else 
+			rect = { std::min(start_pos.x, end_pos.x), start_pos.y - SegmentThickness / 2, std::abs(end_pos.x - start_pos.x), SegmentThickness };
+
+		if (CheckCollisionPointRec(pos, rect)) 
+			return segment;
+	}
+
+	return { -1, -1 };
+}
+
+void Wire::draw(const std::vector<int>& selectedNodeIDs, const std::vector<WireSegment>& selectedSegments) const {
 	Color wire_color = LogicLevelColors[Value];
 
 	for (auto& segment : Segments)
 	{
-		Vector2 start_pos = Nodes[node_id_manager.getIndex(segment.StartID)].Position;
-		Vector2 end_pos = Nodes[node_id_manager.getIndex(segment.EndID)].Position;
+		wire_color = LogicLevelColors[Value];
+		if (std::find(selectedSegments.begin(), selectedSegments.end(), segment) != selectedSegments.end())
+			wire_color = SelectedColor;
+
+		Vector2 start_pos = Nodes[node_id_manager.getIndex(segment.first)].Position;
+		Vector2 end_pos = Nodes[node_id_manager.getIndex(segment.second)].Position;
 		DrawLineEx(start_pos, end_pos, 3, wire_color);
 	}
 
@@ -110,7 +132,7 @@ std::vector<WireNode> Wire::removeNodes(const std::vector<int>& nodeIDs)
 	std::unordered_set<int> ids_to_remove(nodeIDs.begin(), nodeIDs.end());
 
 	for (auto seg = Segments.begin(); seg != Segments.end();) {
-		if (ids_to_remove.count(seg->StartID) || ids_to_remove.count(seg->EndID))
+		if (ids_to_remove.count(seg->first) || ids_to_remove.count(seg->second))
 			seg = Segments.erase(seg);
 		else
 			seg++;
@@ -135,8 +157,8 @@ std::vector<WireNode> Wire::pruneOrphens()
 
 		for (auto& seg : Segments) {
 			int neighbor = -1;
-			if (seg.StartID == nodeID)    neighbor = seg.EndID;
-			else if (seg.EndID == nodeID) neighbor = seg.StartID;
+			if (seg.first == nodeID)    neighbor = seg.second;
+			else if (seg.second == nodeID) neighbor = seg.first;
 			else continue;
 			if (visited.insert(neighbor).second)
 				nodes_to_check.push(neighbor);
@@ -144,7 +166,7 @@ std::vector<WireNode> Wire::pruneOrphens()
 	}
 
 	for (auto seg = Segments.begin(); seg != Segments.end();) {
-		if (!visited.count(seg->StartID) || !visited.count(seg->EndID))
+		if (!visited.count(seg->first) || !visited.count(seg->second))
 			seg = Segments.erase(seg);
 		else
 			seg++;

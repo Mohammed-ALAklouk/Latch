@@ -6,18 +6,14 @@
 #include <unordered_set>
 #include <stack>
 
+typedef std::pair<int, int> WireSegment; // pair of node IDs
+
 struct WireNode
 {
 	PinRef Pin;
 	Vector2 Position;
 	enum NodeType { PIN, JUNCTION } Type;
 	int ID;
-};
-
-struct WireSegment
-{
-	int StartID;
-	int EndID;
 };
 
 struct Wire 
@@ -30,7 +26,8 @@ public:
 	Wire(int id, PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destPos);
 	int addNode(PinRef pin, Vector2 pos);
 	int findNodeAt(Vector2 pos) const;
-	void draw(const std::vector<int>& selectedNodeIDs) const;
+	WireSegment findSegmentAt(Vector2 pos) const;
+	void draw(const std::vector<int>& selectedNodeIDs, const std::vector<WireSegment>& selectedSegments) const;
 	Vector2 getNodePosition(int nodeID) const;
 	void extendTo(int sourceNodeID, PinRef pin, Vector2 destPos);
 	std::vector<WireNode> removeNodes(const std::vector<int>& nodeIDs); // removes the node and everything connected to it
