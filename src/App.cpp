@@ -70,8 +70,7 @@ void App::HandleInput()
 
         for (auto& pair : selected_wire_nodes) {
             int wireID = pair.first;
-            for (auto nodeID: pair.second)
-                circuit.removeWireNode(wireID, nodeID);
+            circuit.removeWireNodes(wireID, pair.second);
         }
 
         selected_wire_nodes.clear();

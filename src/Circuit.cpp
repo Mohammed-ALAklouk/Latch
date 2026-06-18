@@ -142,10 +142,10 @@ void Circuit::removeWire(int id)
 	}
 }
 
-void Circuit::removeWireNode(int wireID, int nodeID)
+void Circuit::removeWireNodes(int wireID, const std::vector<int>& nodeIDs)
 {
 	auto& wire = getWire(wireID);
-	auto& removedPinNodes = wire.removeNode(nodeID);
+	auto& removedPinNodes = wire.removeNodes(nodeIDs);
 	for (auto& node : removedPinNodes) {
 		auto& comp = getComponent(node.Pin.ComponentID);
 		auto& inputIt = std::find(comp->m_inputWireIds.begin(), comp->m_inputWireIds.end(), wireID);

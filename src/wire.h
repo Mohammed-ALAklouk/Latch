@@ -33,7 +33,7 @@ public:
 	void draw(const std::vector<int>& selectedNodeIDs) const;
 	Vector2 getNodePosition(int nodeID) const;
 	void extendTo(int sourceNodeID, PinRef pin, Vector2 destPos);
-	std::vector<WireNode> removeNode(int id); // removes the node and everything connected to it
+	std::vector<WireNode> removeNodes(const std::vector<int>& nodeIDs); // removes the node and everything connected to it
 	std::vector<WireNode> pruneOrphens();
 	
 	static std::vector<Vector2> routePoints(Vector2 from, Vector2 to);

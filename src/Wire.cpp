@@ -13,6 +13,10 @@ int Wire::addNode(PinRef pin, Vector2 pos)
 	auto type = pin.ComponentID != -1 ? WireNode::PIN : WireNode::JUNCTION;
 	Nodes.push_back({ pin, pos, type, new_node_id });
 	node_id_manager.setIndex(new_node_id, Nodes.size() - 1);
+
+	if (SourceNodeID != -1 && type == WireNode::PIN)
+		DestinationNodeIDs.push_back(new_node_id);
+
 	return new_node_id;
 }
 
@@ -87,34 +91,33 @@ std::vector<Vector2> Wire::routePoints(Vector2 from, Vector2 to)
 }
 
 // removes the node and everything connected to it
-std::vector<WireNode> Wire::removeNode(int id)
+std::vector<WireNode> Wire::removeNodes(const std::vector<int>& nodeIDs)
 {
-	if (id == SourceNodeID) {
-		std::vector<WireNode> removedPinNodes = { Nodes[node_id_manager.getIndex(id)] };
-		for (int id : DestinationNodeIDs)
-			removedPinNodes.push_back(Nodes[node_id_manager.getIndex(id)]);
+	if (nodeIDs.empty()) return {};
 
-		Nodes.clear();
-		node_id_manager.clear();
-		return removedPinNodes;
+	for (int id : nodeIDs) {
+		if (id == SourceNodeID) {
+			std::vector<WireNode> removedPinNodes = { Nodes[node_id_manager.getIndex(id)] };
+			for (int id : DestinationNodeIDs)
+				removedPinNodes.push_back(Nodes[node_id_manager.getIndex(id)]);
+
+			Nodes.clear();
+			node_id_manager.clear();
+			return removedPinNodes;
+		}
 	}
 
-	int index = node_id_manager.getIndex(id);
-	if (index == -1) return {};
+	std::unordered_set<int> ids_to_remove(nodeIDs.begin(), nodeIDs.end());
 
-	WireNode node = Nodes[index];
-	eraseNode(id);
 	for (auto seg = Segments.begin(); seg != Segments.end();) {
-		if (seg->StartID == id || seg->EndID == id)
+		if (ids_to_remove.count(seg->StartID) || ids_to_remove.count(seg->EndID))
 			seg = Segments.erase(seg);
 		else
 			seg++;
 	}
 
 	auto removedPinNodes = pruneOrphens();
-	if (node.Type == WireNode::PIN)
-		removedPinNodes.push_back(node);
-
+	
 	return removedPinNodes;
 }
 
@@ -176,6 +179,9 @@ std::vector<WireNode> Wire::pruneOrphens()
 void Wire::eraseNode(int id) {
 	int index = node_id_manager.getIndex(id);
 	if (index == -1) return;
+
+	if (Nodes[index].Type == WireNode::PIN)
+		DestinationNodeIDs.erase(std::remove(DestinationNodeIDs.begin(), DestinationNodeIDs.end(), id), DestinationNodeIDs.end());
 
 	node_id_manager.releaseId(id);
 
