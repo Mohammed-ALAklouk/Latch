@@ -240,3 +240,14 @@ int Circuit::extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector
 	}
 	return wireID;
 }
+
+int Circuit::extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest)
+{
+	auto& wire = getWire(wireID);
+	wire.extendTo(segment, source, targetPin, dest);
+	if (targetPin.ComponentID != -1) {
+		auto& target_component = getComponent(targetPin.ComponentID);
+		target_component->m_inputWireIds[targetPin.PinIndex] = wireID;
+	}
+	return wireID;
+}

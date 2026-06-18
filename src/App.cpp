@@ -14,7 +14,7 @@ App::App()
 
     panning_context = { 0, 0 };
     dragging_context = { {0, 0} };
-    connecting_context = {ConnectingContext::PIN, -1, -1, -1, {-1, -1}};
+	connecting_context = { ConnectingContext::PIN, -1, -1, {0, 0}, {-1, -1}, -1, {-1, -1} };
     
     camera = { 0 };
     camera.offset = Vector2{ window_width / 2.0f, window_height / 2.0f };
@@ -274,10 +274,15 @@ void App::Draw()
             start = sourceComponent->getOutputPosition();
 			line_color = LogicLevelColors[sourceComponent->m_outputValues[0]];
         } 
-        else {
+        else if (connecting_context.sourceNodeID != -1){
             auto& sourceWire = circuit.getWire(connecting_context.wireID);
 			start = sourceWire.getNodePosition(connecting_context.sourceNodeID);
-			line_color = LogicLevelColors[sourceWire.Value];
+            line_color = LogicLevelColors[sourceWire.Value];
+        }
+        else {
+            auto& sourceWire = circuit.getWire(connecting_context.wireID);
+            start = connecting_context.sourcePos;
+            line_color = LogicLevelColors[sourceWire.Value];
         }
 
         auto route = Wire::routePoints(start, destination_pos);
@@ -384,6 +389,11 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         for (auto& wire : circuit.m_wires) {
             WireSegment segment = wire.findSegmentAt(world_mouse_pos);
             if (segment.first != -1) {
+				connecting_context.sourceSegment = segment;
+				connecting_context.type = ConnectingContext::JUNCTION;
+				connecting_context.wireID = wire.ID;
+                connecting_context.sourcePos = { std::round(world_mouse_pos.x / cell_size) * cell_size, std::round(world_mouse_pos.y / cell_size) * cell_size };
+				current_mouse_state = MouseState::Connecting;
                 clearSelection();
 
                 if (selected_wire_nodes.find(wire.ID) == selected_wire_nodes.end())
@@ -503,8 +513,15 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
         
         if (connecting_context.type == ConnectingContext::JUNCTION) {
 			auto& sourceWire = circuit.getWire(connecting_context.wireID);
-            if (sourceWire.findNodeAt(destination_pos) == -1)
-                circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
+            if (sourceWire.findNodeAt(destination_pos) == -1) {
+                if (connecting_context.sourceNodeID != -1) {
+                    circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
+                }
+                else {
+                    circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceSegment, connecting_context.sourcePos, connecting_context.targetPin, destination_pos);
+                }
+
+            }
         }
         else {
 		    auto source_pos = circuit.getComponent(connecting_context.sourceComponentID)->getOutputPosition();
@@ -522,7 +539,7 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 		// TODO: Store more info in the action to avoid having to search for the wire later
         //action_manager.addAction<WirePlacedAction>(id, PinRef{ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
 
-        connecting_context = { ConnectingContext::PIN, -1, -1, -1, { -1, -1 } };
+        connecting_context = { ConnectingContext::PIN, -1, -1, {0, 0}, {-1, -1}, -1, {-1, -1} };
         current_mouse_state = MouseState::Idle;
         return;
     }

@@ -30,6 +30,7 @@ public:
 	void draw(const std::vector<int>& selectedNodeIDs, const std::vector<WireSegment>& selectedSegments) const;
 	Vector2 getNodePosition(int nodeID) const;
 	void extendTo(int sourceNodeID, PinRef pin, Vector2 destPos);
+	void extendTo(WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest);
 	std::vector<WireNode> removeNodes(const std::vector<int>& nodeIDs); // removes the node and everything connected to it
 	std::vector<WireNode> removeSegments(const std::vector<WireSegment>& segments); // removes the node and everything connected to it
 	std::vector<WireNode> pruneOrphens();

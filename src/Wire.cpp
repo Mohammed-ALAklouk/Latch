@@ -95,6 +95,16 @@ void Wire::extendTo(int sourceNodeID, PinRef pin, Vector2 destPos)
 	}
 }
 
+void Wire::extendTo(WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest)
+{
+	int sourceNodeID = addNode({ -1, -1 }, source);
+	Segments.erase(std::remove(Segments.begin(), Segments.end(), segment), Segments.end());
+	Segments.push_back({ segment.first, sourceNodeID });
+	Segments.push_back({ sourceNodeID, segment.second });
+
+	extendTo(sourceNodeID, targetPin, dest);
+}
+
 std::vector<Vector2> Wire::routePoints(Vector2 from, Vector2 to)
 {
 	int dx = to.x - from.x;

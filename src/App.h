@@ -24,6 +24,8 @@ struct ConnectingContext {
 	enum ConnectionType {PIN, JUNCTION} type;
 	int sourceNodeID;
 	int wireID;
+	Vector2 sourcePos;
+	WireSegment sourceSegment;
 	
 	int sourceComponentID;
 	PinRef targetPin;

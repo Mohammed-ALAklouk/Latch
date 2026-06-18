@@ -29,6 +29,8 @@ public:
 		std::unordered_map<int, std::vector<int>>& selectedWireNodes, std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments) const;
 	void restoreComponent(int id, NodeInfo nodeInfo);
 	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos);
+	int extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest);
+
 
 	bool wireExists(int id) const {
 		return m_wire_ids.getIndex(id) != -1;
