@@ -3,6 +3,8 @@
 #include "IdManager.h"
 
 #include <raylib.h>
+#include <unordered_set>
+#include <stack>
 
 struct WireNode
 {
@@ -65,14 +67,14 @@ public:
 		}
 
 		for (auto& node : Nodes) {
+			bool selected = std::find(selectedNodeIDs.begin(), selectedNodeIDs.end(), node.ID) != selectedNodeIDs.end();
+			wire_color = LogicLevelColors[Value];
+			if (selected) wire_color = selected_color;
+			
 			if (node.Type == WireNode::JUNCTION) {
-				bool selected = std::find(selectedNodeIDs.begin(), selectedNodeIDs.end(), node.ID) != selectedNodeIDs.end();
-				wire_color = LogicLevelColors[Value];
-				if (selected) wire_color = selected_color;
 				DrawCircleV(node.Position, 5, wire_color);
-			} else
-				{
-				DrawRectangleLines(node.Position.x - 6, node.Position.y - 6, 12, 12, WHITE);
+			} else {
+				DrawRectangleLines(node.Position.x - 6, node.Position.y - 6, 12, 12, wire_color);
 			}
 		}
 	}
@@ -125,66 +127,68 @@ public:
 	}
 
 	// removes the node and everything connected to it
-	void removeNode(int id)
+	std::vector<WireNode> removeNode(int id)
 	{
-		if (node_id_manager.getIndex(id) == -1) return;
+		int index = node_id_manager.getIndex(id);
+		if ( index == -1 || index == 0) return {};
 
+		WireNode node = Nodes[index];
 		deleteNode(id);
 		for (auto seg = Segments.begin(); seg != Segments.end();) {
 			if (seg->StartID == id || seg->EndID == id)
-				Segments.erase(seg);
+				seg = Segments.erase(seg);
 			else
 				seg++;
 		}
-		if (Nodes.size() == 0) return;
+		if (Nodes.size() == 0) return std::vector<WireNode> {node};
 
-		std::vector<int> visitedNodes;
+		std::unordered_set<int> visited;
+		std::stack<int> nodes_to_check;
 		
-		std::vector<int> curr_nodes_to_check = { Nodes[0].ID };
-		std::vector<int> next_nodes_to_check;
+		visited.insert(Nodes[0].ID);
+		nodes_to_check.push(Nodes[0].ID);
 
-		while (curr_nodes_to_check.size()) {
-			int nodeID = curr_nodes_to_check[0];
+		while (nodes_to_check.size()) {
+			int nodeID = nodes_to_check.top();
+			nodes_to_check.pop();
 
 			for (auto& seg: Segments) {
-				if (seg.StartID == nodeID) {
-					bool is_visited = std::find(visitedNodes.begin(), visitedNodes.end(), seg.EndID) != visitedNodes.end();
-					if (!is_visited) next_nodes_to_check.push_back(seg.EndID);
-				}
-				else if (seg.EndID == nodeID) {
-					bool is_visited = std::find(visitedNodes.begin(), visitedNodes.end(), seg.StartID) != visitedNodes.end();
-					if (!is_visited) next_nodes_to_check.push_back(seg.StartID);
-				}
+				int neighbor = -1;
+				if (seg.StartID == nodeID)    neighbor = seg.EndID;
+				else if (seg.EndID == nodeID) neighbor = seg.StartID;
+				else continue;
+				if (visited.insert(neighbor).second)   
+					nodes_to_check.push(neighbor);
 			}
-
-			visitedNodes.push_back(nodeID);
-			curr_nodes_to_check.erase(curr_nodes_to_check.begin());
-			if (curr_nodes_to_check.size() == 0) {
-				curr_nodes_to_check = next_nodes_to_check;
-				next_nodes_to_check.clear();
-			}
-
 		}
 
-		for (auto& node = Nodes.begin(); node != Nodes.end();) {
-			bool should_delete = std::find(visitedNodes.begin(), visitedNodes.end(), node->ID) == visitedNodes.end();
-			if (should_delete)
-				Nodes.erase(node);
-			else
-				node++;
-		}
-
-		for (auto& seg = Segments.begin(); seg != Segments.end();) {
-			bool startVisited = std::find(visitedNodes.begin(), visitedNodes.end(), seg->StartID) != visitedNodes.end();
-			bool endVisited = std::find(visitedNodes.begin(), visitedNodes.end(), seg->EndID) != visitedNodes.end();
-
-			if (!startVisited && !endVisited)
-				Segments.erase(seg);
+		for (auto seg = Segments.begin(); seg != Segments.end();) {
+			if (!visited.count(seg->StartID) || !visited.count(seg->EndID))
+				seg = Segments.erase(seg);
 			else
 				seg++;
 		}
 
-		if (Segments.size() == 0) Nodes.clear();
+		std::vector<WireNode> removedNodes;
+		std::vector<int> toRemove;
+		for (auto& n : Nodes)
+			if (visited.count(n.ID) == 0)
+				toRemove.push_back(n.ID);
+
+		for (int rid : toRemove) {
+			removedNodes.push_back(Nodes[node_id_manager.getIndex(rid)]);
+			deleteNode(rid);
+		}
+
+		if (Segments.empty()) {
+			for (auto& node : Nodes) 
+				removedNodes.push_back(node);
+
+			Nodes.clear();
+			node_id_manager.clear();
+		}
+
+		return removedNodes;
 	}
 
 	// removes only the given node
@@ -192,10 +196,14 @@ public:
 		int index = node_id_manager.getIndex(id);
 		if (index == -1) return;
 
-		Nodes[index] = *(Nodes.end() - 1);
-		Nodes.pop_back();
 		node_id_manager.releaseId(id);
-		node_id_manager.setIndex(Nodes[index].ID, index);
+
+		int lastIndex = Nodes.size() - 1;
+		if (index != lastIndex) {
+			Nodes[index] = Nodes[lastIndex];
+			node_id_manager.setIndex(Nodes[index].ID, index);
+		}
+		Nodes.pop_back();
 	}
 
 

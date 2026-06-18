@@ -45,6 +45,11 @@ public:
 		}
 	}
 
+	void clear() {
+		indices.clear();
+		free_ids.clear();
+	}
+
 private:
 	std::vector<int> indices;
 	std::vector<int> free_ids;

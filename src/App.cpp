@@ -218,11 +218,28 @@ void App::UI()
 		ImGui::Text("Component ID: %d", componentID);
 		ImGui::Text("Type: %d", static_cast<int>(component->getNodeInfoType()));
 		ImGui::Text("Position: (%.2f, %.2f)", component->m_rect.x, component->m_rect.y);
-		ImGui::Text("Input Wires:");
-		for (int i = 0; i < component->m_inputWireIds.size(); ++i) {
-			ImGui::Text("  Input %d: %d", i, component->m_inputWireIds[i]);
-		}
+        ImGui::Text("Input Wires:");
+        for (int i = 0; i < component->m_inputWireIds.size(); ++i) {
+            ImGui::Text("  Input %d: %d", i, component->m_inputWireIds[i]);
+        }
+        ImGui::Text("Output Wires:");
+        for (int i = 0; i < component->m_outputWireIds.size(); ++i) {
+            ImGui::Text("  Output %d: %d", i, component->m_outputWireIds[i]);
+        }
 	}
+    else if (selected_wire_nodes.size() == 1) {
+		auto& pair = *selected_wire_nodes.begin();
+        if (pair.second.size() == 1)
+        {
+		    int wireID = pair.first;
+		    auto& wire = circuit.getWire(wireID);
+		    ImGui::Text("Wire ID: %d", wireID);
+            ImGui::Text("Node ID: %d", pair.second[0]);
+		    ImGui::Text("Node Counter: %d", wire.Nodes.size());
+		    ImGui::Text("Segment Counter: %d", wire.Segments.size());
+        }
+    }
+
     
     ImGui::End();
 
@@ -364,6 +381,7 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 				current_mouse_state = MouseState::Connecting;
 
                 selected_wire_nodes.clear();
+				selected_component_ids.clear();
 
                 if (selected_wire_nodes.find(wire.ID) == selected_wire_nodes.end())
                     selected_wire_nodes[wire.ID] = std::vector<int>();
@@ -387,7 +405,9 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
                 if (std::find(selected_component_ids.begin(), selected_component_ids.end(), component->m_id) == selected_component_ids.end())
                 {
                     selected_component_ids.clear();
+					selected_wire_nodes.clear();
                     selected_component_ids.push_back(component->m_id);
+
                 }
 
                 break;

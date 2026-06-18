@@ -131,22 +131,6 @@ void Circuit::removeWire(int id)
 {
 	int index = m_wire_ids.getIndex(id);
 	if (index != -1) {
-		auto& wire = getWire(id);
-		auto& source_component = getComponent(wire.Nodes[0].Pin.ComponentID);
-		for (auto& output_wire_id : source_component->m_outputWireIds) {
-			if (output_wire_id == id) {
-				output_wire_id = -1;
-			}
-		}
-
-		auto& output_component = getComponent(wire.Nodes[1].Pin.ComponentID);
-		for (auto& input_wire_id : output_component->m_inputWireIds) {
-			if (input_wire_id == id) {
-				input_wire_id = -1;
-			}
-		}
-
-
 		int lastIndex = (int)m_wires.size() - 1;
 		if (index != lastIndex) {
 			std::swap(m_wires[index], m_wires[lastIndex]);
@@ -161,10 +145,21 @@ void Circuit::removeWire(int id)
 void Circuit::removeWireNode(int wireID, int nodeID)
 {
 	auto& wire = getWire(wireID);
-	wire.removeNode(nodeID);
+	auto& removedNodes = wire.removeNode(nodeID);
+	for (auto& node : removedNodes) {
+		if (node.Type == WireNode::PIN) {
+			auto& comp = getComponent(node.Pin.ComponentID);
+			auto& inputIt = std::find(comp->m_inputWireIds.begin(), comp->m_inputWireIds.end(), wireID);
+			auto& outputIt = std::find(comp->m_outputWireIds.begin(), comp->m_outputWireIds.end(), wireID);
+			if (inputIt != comp->m_inputWireIds.end()) *inputIt = -1;
+			if (outputIt != comp->m_outputWireIds.end()) *outputIt = -1;
 
-	//if (wire.Segments.size() == 0)
-	//	removeWire(wireID);
+			printf("deleted from component %d\n", node.Pin.ComponentID);
+		}
+	}
+
+	if (wire.Nodes.size() == 0)
+		removeWire(wireID);
 }
 
 
