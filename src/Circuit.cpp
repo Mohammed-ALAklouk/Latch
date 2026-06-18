@@ -158,6 +158,22 @@ void Circuit::removeWireNodes(int wireID, const std::vector<int>& nodeIDs)
 		removeWire(wireID);
 }
 
+void Circuit::removeWireSegments(int wireID, const std::vector<WireSegment>& segments)
+{
+	auto& wire = getWire(wireID);
+	auto& removedPinNodes = wire.removeSegments(segments);
+	for (auto& node : removedPinNodes) {
+		auto& comp = getComponent(node.Pin.ComponentID);
+		auto& inputIt = std::find(comp->m_inputWireIds.begin(), comp->m_inputWireIds.end(), wireID);
+		auto& outputIt = std::find(comp->m_outputWireIds.begin(), comp->m_outputWireIds.end(), wireID);
+		if (inputIt != comp->m_inputWireIds.end()) *inputIt = -1;
+		if (outputIt != comp->m_outputWireIds.end()) *outputIt = -1;
+	}
+
+	if (wire.Nodes.size() == 0)
+		removeWire(wireID);
+}
+
 
 void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
 	std::unordered_map<int, std::vector<int>>& selectedWireNodes) const

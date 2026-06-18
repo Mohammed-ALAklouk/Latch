@@ -143,6 +143,17 @@ std::vector<WireNode> Wire::removeNodes(const std::vector<int>& nodeIDs)
 	return removedPinNodes;
 }
 
+std::vector<WireNode> Wire::removeSegments(const std::vector<WireSegment>& segments)
+{
+	for (auto& seg : segments) {
+		auto it = std::find(Segments.begin(), Segments.end(), seg);
+		if (it != Segments.end())
+			Segments.erase(it);
+	}
+
+	return pruneOrphens();
+}
+
 std::vector<WireNode> Wire::pruneOrphens()
 {
 	std::unordered_set<int> visited;

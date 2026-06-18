@@ -24,6 +24,7 @@ public:
 	void removeComponent(int id);
 	void removeWire(int id);
 	void removeWireNodes(int wireID, const std::vector<int>& nodeIDs);
+	void removeWireSegments(int wireID, const std::vector<WireSegment>& segments);
 	void selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
 		std::unordered_map<int, std::vector<int>>& selectedWireNodes) const;
 	void restoreComponent(int id, NodeInfo nodeInfo);

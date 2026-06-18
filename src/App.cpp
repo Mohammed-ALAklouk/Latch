@@ -73,6 +73,11 @@ void App::HandleInput()
             circuit.removeWireNodes(wireID, pair.second);
         }
 
+        for (auto& pair : selected_wire_segments) {
+            int wireID = pair.first;
+            circuit.removeWireSegments(wireID, pair.second);
+		}
+
 		clearSelection();
     }
 
