@@ -35,6 +35,11 @@ public:
 	std::vector<WireNode> pruneOrphens();
 	
 	static std::vector<Vector2> routePoints(Vector2 from, Vector2 to);
+	static Rectangle getSegmentRect(Vector2 start, Vector2 end) {
+		return (start.x == end.x) 
+			? Rectangle{ start.x - SegmentThickness / 2, std::min(start.y, end.y), SegmentThickness, std::abs(end.y - start.y) }
+			: Rectangle{ std::min(start.x, end.x), start.y - SegmentThickness / 2, std::abs(end.x - start.x), SegmentThickness };
+	}
 	
 	static Color SelectedColor;
 	static float NodeRadius;

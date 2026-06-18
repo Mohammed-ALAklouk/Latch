@@ -25,10 +25,14 @@ public:
 	void removeWire(int id);
 	void removeWireNodes(int wireID, const std::vector<int>& nodeIDs);
 	void removeWireSegments(int wireID, const std::vector<WireSegment>& segments);
-	void selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
-		std::unordered_map<int, std::vector<int>>& selectedWireNodes) const;
+	void selectInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
+		std::unordered_map<int, std::vector<int>>& selectedWireNodes, std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments) const;
 	void restoreComponent(int id, NodeInfo nodeInfo);
 	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos);
+
+	bool wireExists(int id) const {
+		return m_wire_ids.getIndex(id) != -1;
+	}
 
 	std::unique_ptr<Gate>& getComponent(int id) {
 		int index = m_component_ids.getIndex(id);

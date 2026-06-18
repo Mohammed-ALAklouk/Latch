@@ -175,8 +175,8 @@ void Circuit::removeWireSegments(int wireID, const std::vector<WireSegment>& seg
 }
 
 
-void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
-	std::unordered_map<int, std::vector<int>>& selectedWireNodes) const
+void Circuit::selectInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
+	std::unordered_map<int, std::vector<int>>& selectedWireNodes, std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments) const
 {
 	for (const auto& component : m_components) {
 		if (CheckCollisionRecs(component->m_rect, selectionRect)) {
@@ -191,6 +191,18 @@ void Circuit::selectComponentsInArea(Rectangle selectionRect, std::vector<int>& 
 					selectedWireNodes[wire.ID] = {};
 				
 				selectedWireNodes[wire.ID].push_back(node.ID);
+			}
+		}
+
+		for (const auto& segment : wire.Segments) {
+			Vector2 p1 = wire.getNodePosition(segment.first);
+			Vector2 p2 = wire.getNodePosition(segment.second);
+			Rectangle segmentRect = Wire::getSegmentRect(p1, p2);
+			if (CheckCollisionRecs(segmentRect, selectionRect)) {
+				if (selectedWireSegments.find(wire.ID) == selectedWireSegments.end())
+					selectedWireSegments[wire.ID] = {};
+				
+				selectedWireSegments[wire.ID].push_back(segment);
 			}
 		}
 	}

@@ -38,11 +38,7 @@ WireSegment Wire::findSegmentAt(Vector2 pos) const
 	for (const auto& segment : Segments) {
 		Vector2 start_pos = Nodes[node_id_manager.getIndex(segment.first)].Position;
 		Vector2 end_pos = Nodes[node_id_manager.getIndex(segment.second)].Position;
-		Rectangle rect;
-		if (start_pos.x == end_pos.x) 
-			rect = { start_pos.x - SegmentThickness / 2, std::min(start_pos.y, end_pos.y), SegmentThickness, std::abs(end_pos.y - start_pos.y) };
-		else 
-			rect = { std::min(start_pos.x, end_pos.x), start_pos.y - SegmentThickness / 2, std::abs(end_pos.x - start_pos.x), SegmentThickness };
+		Rectangle rect = getSegmentRect(start_pos, end_pos);
 
 		if (CheckCollisionPointRec(pos, rect)) 
 			return segment;

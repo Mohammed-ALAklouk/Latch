@@ -75,7 +75,8 @@ void App::HandleInput()
 
         for (auto& pair : selected_wire_segments) {
             int wireID = pair.first;
-            circuit.removeWireSegments(wireID, pair.second);
+            if (circuit.wireExists(wireID))
+                circuit.removeWireSegments(wireID, pair.second);
 		}
 
 		clearSelection();
@@ -563,7 +564,7 @@ void App::UpdateSelectingState(const Vector2& world_mouse_pos)
     selecting_context.selectionRect = { topLeft.x, topLeft.y, size.x, size.y };
 
 	clearSelection();
-    circuit.selectComponentsInArea(selecting_context.selectionRect, selected_component_ids, selected_wire_nodes);
+    circuit.selectInArea(selecting_context.selectionRect, selected_component_ids, selected_wire_nodes, selected_wire_segments);
 }
 
 std::vector<NodeInfo> App::getNodeInfoCopy(std::vector<int>& ids)
