@@ -276,17 +276,13 @@ void App::Draw()
 			line_color = LogicLevelColors[sourceWire.Value];
         }
 
-        auto junction_node = Wire::getExtentionResults(start, destination_pos);
+        auto route = Wire::routePoints(start, destination_pos);
+        for (int i = 0; i < route.size() - 1; i++) 
+            DrawLineEx(route[i], route[i+1], 3, line_color);
 
-        if (junction_node.ID == 1) {
-			DrawLineEx(start, junction_node.Position, 3, line_color);
-			DrawLineEx(junction_node.Position, destination_pos, 3, line_color);
-			DrawCircleV(junction_node.Position, 5, line_color);
-        }
-        else {
-            DrawLineEx(start, destination_pos, 3, line_color);
-        }
-		
+        if (route.size() == 3) 
+			DrawCircleV(route[1], 5, line_color);
+        
 
     }
     else if (current_mouse_state == MouseState::Selecting)
@@ -354,9 +350,32 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         }
 
 
-        bool clicked_on_output_pin = false;
 		bool clicked_on_wire = false;
+        bool clicked_on_output_pin = false;
         bool clicked_on_component = false;
+
+        for (auto& wire : circuit.m_wires) {
+            int nodeID = wire.findNodeAt(world_mouse_pos);
+            if (nodeID != -1) {
+                connecting_context.type = ConnectingContext::JUNCTION;
+                connecting_context.wireID = wire.ID;
+                connecting_context.sourceNodeID = nodeID;
+                current_mouse_state = MouseState::Connecting;
+
+                selected_wire_nodes.clear();
+                selected_component_ids.clear();
+
+                if (selected_wire_nodes.find(wire.ID) == selected_wire_nodes.end())
+                    selected_wire_nodes[wire.ID] = std::vector<int>();
+
+                selected_wire_nodes[wire.ID].push_back(nodeID);
+
+                clicked_on_wire = true;
+                break;
+            }
+        }
+
+        if (clicked_on_wire) return;
 
         for (auto& component : circuit.m_components) {
             if (component->outputPinContainsPoint(world_mouse_pos) != -1)
@@ -371,29 +390,6 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
         }
 
         if (clicked_on_output_pin) return;
-        
-        for (auto& wire : circuit.m_wires) {
-			int nodeID = wire.collidesWithNode(world_mouse_pos);
-            if (nodeID != -1) {
-				connecting_context.type = ConnectingContext::JUNCTION;
-				connecting_context.wireID = wire.ID;
-				connecting_context.sourceNodeID = nodeID;
-				current_mouse_state = MouseState::Connecting;
-
-                selected_wire_nodes.clear();
-				selected_component_ids.clear();
-
-                if (selected_wire_nodes.find(wire.ID) == selected_wire_nodes.end())
-                    selected_wire_nodes[wire.ID] = std::vector<int>();
-
-                selected_wire_nodes[wire.ID].push_back(nodeID);
-
-                clicked_on_wire = true;
-                break;
-            }
-		}
-
-		if (clicked_on_wire) return;
 
         for (auto& component : circuit.m_components) {
             if (component->containsPoint(world_mouse_pos)) {
@@ -486,19 +482,22 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {    
         Vector2 destination_pos = { round(world_mouse_pos.x / cell_size) * cell_size, round(world_mouse_pos.y / cell_size) * cell_size };
-
+        
         if (connecting_context.type == ConnectingContext::JUNCTION) {
 			auto& sourceWire = circuit.getWire(connecting_context.wireID);
-            if (sourceWire.collidesWithNode(destination_pos) == -1)
+            if (sourceWire.findNodeAt(destination_pos) == -1)
                 circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
         }
         else {
 		    auto source_pos = circuit.getComponent(connecting_context.sourceComponentID)->getOutputPosition();
-            int id = circuit.addWire(
-                { connecting_context.sourceComponentID, 0 }, 
-                source_pos, 
-                connecting_context.targetPin, 
-                destination_pos);		    
+            if (source_pos.x != destination_pos.x || source_pos.y != destination_pos.y)
+            {
+                int id = circuit.addWire(
+                    { connecting_context.sourceComponentID, 0 }, 
+                    source_pos, 
+                    connecting_context.targetPin, 
+                    destination_pos);		    
+            }
         }
 
         
