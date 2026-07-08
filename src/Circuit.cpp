@@ -84,7 +84,7 @@ void Circuit::set_component_input_wire(int componentID, int input_index, int wir
 	}
 }
 
-int Circuit::addWire(PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destinationPos)
+int Circuit::addWire(PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destinationPos, Wire::Elbow first)
 {
 	if (source.ComponentID == -1) {
 		return -1;
@@ -100,7 +100,7 @@ int Circuit::addWire(PinRef source, Vector2 sourcePos, PinRef destination, Vecto
 	}
 
 
-	m_wires.push_back(Wire(id, source, sourcePos, destination, destinationPos));
+	m_wires.push_back(Wire(id, source, sourcePos, destination, destinationPos, first));
 	m_wire_ids.setIndex(id, m_wires.size() - 1);
 	return id;
 }
@@ -242,22 +242,22 @@ void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 	*/
 }
 
-int Circuit::extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos)
+int Circuit::extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos, Wire::Elbow first)
 {
 	if (!wireExists(wireID)) return -1;
 
-	getWire(wireID).extendTo(sourceNodeID, targetPin, targetPos);
+	getWire(wireID).extendTo(sourceNodeID, targetPin, targetPos, first);
 	if (targetPin.ComponentID != -1)
 		set_component_input_wire(targetPin.ComponentID, targetPin.PinIndex, wireID);
 
 	return wireID;
 }
 
-int Circuit::extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest)
+int Circuit::extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest, Wire::Elbow first)
 {
 	if (!wireExists(wireID)) return -1;
 
-	getWire(wireID).extendTo(segment, source, targetPin, dest);
+	getWire(wireID).extendTo(segment, source, targetPin, dest, first);
 	if (targetPin.ComponentID != -1)
 		set_component_input_wire(targetPin.ComponentID, targetPin.PinIndex, wireID);
 

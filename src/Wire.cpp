@@ -1,10 +1,10 @@
 #include "Wire.h"
 
-Wire::Wire(int id, PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destPos)
+Wire::Wire(int id, PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destPos, Elbow first)
 	: ID(id), Value(LogicLevel::UNDEFINED)
 {
 	SourceNodeID = addNode(source, sourcePos);
-	extendTo(SourceNodeID, destination, destPos);
+	extendTo(SourceNodeID, destination, destPos, first);
 }
 
 // ===========================================================================
@@ -142,10 +142,10 @@ void Wire::removeSegment(int a, int b)
 //  Extending (position-facing; callers never name an internal id)
 // ===========================================================================
 
-void Wire::extendTo(int sourceNodeID, PinRef pin, Vector2 destPos)
+void Wire::extendTo(int sourceNodeID, PinRef pin, Vector2 destPos, Elbow first)
 {
 	Vector2 sourcePos = positionOf(sourceNodeID);
-	auto pts = routePoints(sourcePos, destPos);
+	auto pts = routePoints(sourcePos, destPos, first);
 
 	int prev = sourceNodeID;
 	for (size_t i = 1; i < pts.size(); ++i) {
@@ -158,26 +158,25 @@ void Wire::extendTo(int sourceNodeID, PinRef pin, Vector2 destPos)
 	normalize();
 }
 
-void Wire::extendTo(WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest)
+void Wire::extendTo(WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest, Elbow first)
 {
 	if (segmentContainsPoint(segment, dest)) return;
 
 	// Drop a node on the segment body; normalize()'s split pass wires it into
 	// the segment, then we branch off it toward the destination.
 	int sourceNodeID = addNode({ -1, -1 }, source);
-	extendTo(sourceNodeID, targetPin, dest);
+	extendTo(sourceNodeID, targetPin, dest, first);
 }
 
-std::vector<Vector2> Wire::routePoints(Vector2 from, Vector2 to)
+std::vector<Vector2> Wire::routePoints(Vector2 from, Vector2 to, Elbow first)
 {
-	int dx = to.x - from.x;
-	int dy = to.y - from.y;
+	if (from.x == to.x || from.y == to.y)
+		return { from, to }; // already straight; no elbow needed
 
-	if (dx == 0 || dy == 0)
-		return { from, to };
-
-	Vector2 elbow = (dx > dy) ? Vector2{ from.x, to.y }
-	: Vector2{ to.x, from.y };
+	// VerticalFirst: leave the source vertically, so the leg touching the
+	// destination is horizontal (elbow shares the source's x, the dest's y).
+	Vector2 elbow = (first == Elbow::VerticalFirst) ? Vector2{ from.x, to.y }
+	                                                : Vector2{ to.x, from.y };
 	return { from, elbow, to };
 }
 

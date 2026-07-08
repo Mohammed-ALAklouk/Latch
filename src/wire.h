@@ -22,20 +22,23 @@ struct WireNode
 struct Wire
 {
 public:
-	Wire(int id, PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destPos);
+	// Which axis the elbow of an L-shaped route runs first, from source to dest.
+	enum class Elbow { HorizontalFirst, VerticalFirst };
+
+	Wire(int id, PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destPos, Elbow first = Elbow::HorizontalFirst);
 
 	int findNodeAt(Vector2 pos) const;
 	WireSegment findSegmentAt(Vector2 pos) const;
 	void draw(const std::vector<int>& selectedNodeIDs, const std::vector<WireSegment>& selectedSegments) const;
 	Vector2 getNodePosition(int nodeID) const;
 
-	void extendTo(int sourceNodeID, PinRef pin, Vector2 destPos);
-	void extendTo(WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest);
+	void extendTo(int sourceNodeID, PinRef pin, Vector2 destPos, Elbow first = Elbow::HorizontalFirst);
+	void extendTo(WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest, Elbow first = Elbow::HorizontalFirst);
 
 	std::vector<WireNode> removeNodes(const std::vector<int>& nodeIDs);       // removes the nodes and anything left disconnected
 	std::vector<WireNode> removeSegments(const std::vector<WireSegment>& segments);
 
-	static std::vector<Vector2> routePoints(Vector2 from, Vector2 to);
+	static std::vector<Vector2> routePoints(Vector2 from, Vector2 to, Elbow first = Elbow::HorizontalFirst);
 	static Rectangle getSegmentRect(Vector2 start, Vector2 end) {
 		return (start.x == end.x)
 			? Rectangle{ start.x - SegmentThickness / 2, std::min(start.y, end.y), SegmentThickness, std::abs(end.y - start.y) }

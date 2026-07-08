@@ -286,7 +286,7 @@ void App::Draw()
             line_color = LogicLevelColors[sourceWire.Value];
         }
 
-        auto route = Wire::routePoints(start, destination_pos);
+        auto route = Wire::routePoints(start, destination_pos, connecting_context.elbow);
         for (int i = 0; i < route.size() - 1; i++) 
             DrawLineEx(route[i], route[i+1], 3, line_color);
 
@@ -516,10 +516,10 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 			auto& sourceWire = circuit.getWire(connecting_context.wireID);
             if (sourceWire.findNodeAt(destination_pos) == -1) {
                 if (connecting_context.sourceNodeID != -1) {
-                    circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos);
+                    circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceNodeID, connecting_context.targetPin, destination_pos, connecting_context.elbow);
                 }
                 else {
-                    circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceSegment, connecting_context.sourcePos, connecting_context.targetPin, destination_pos);
+                    circuit.extendWireTo(connecting_context.wireID, connecting_context.sourceSegment, connecting_context.sourcePos, connecting_context.targetPin, destination_pos, connecting_context.elbow);
                 }
 
             }
@@ -529,10 +529,11 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
             if (source_pos.x != destination_pos.x || source_pos.y != destination_pos.y)
             {
                 int id = circuit.addWire(
-                    { connecting_context.sourceComponentID, 0 }, 
-                    source_pos, 
-                    connecting_context.targetPin, 
-                    destination_pos);		    
+                    { connecting_context.sourceComponentID, 0 },
+                    source_pos,
+                    connecting_context.targetPin,
+                    destination_pos,
+                    connecting_context.elbow);
             }
         }
 
@@ -543,6 +544,32 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
         connecting_context = { ConnectingContext::PIN, -1, -1, {0, 0}, {-1, -1}, -1, {-1, -1} };
         current_mouse_state = MouseState::Idle;
         return;
+    }
+
+    // The elbow is set by the initial direction you drag away from the source,
+    // then held. Returning near the source re-arms it, so the only way to change
+    // the bend is to go back to the start and draw it again.
+    Vector2 dragSource;
+    if (connecting_context.type == ConnectingContext::PIN)
+        dragSource = circuit.getComponent(connecting_context.sourceComponentID)->getOutputPosition();
+    else if (connecting_context.sourceNodeID != -1)
+        dragSource = circuit.getWire(connecting_context.wireID).getNodePosition(connecting_context.sourceNodeID);
+    else
+        dragSource = connecting_context.sourcePos;
+
+    Vector2 fromSource = { world_mouse_pos.x - dragSource.x, world_mouse_pos.y - dragSource.y };
+    float distSq = fromSource.x * fromSource.x + fromSource.y * fromSource.y;
+    const float resetDist = (float)cell_size;      // back near the source -> re-arm
+    const float armDist = (float)cell_size * 1.5f; // dragged this far away -> lock the bend in
+
+    if (distSq < resetDist * resetDist) {
+        connecting_context.elbowLocked = false;
+    }
+    else if (!connecting_context.elbowLocked && distSq > armDist * armDist) {
+        connecting_context.elbow = (fabsf(fromSource.x) > fabsf(fromSource.y))
+            ? Wire::Elbow::HorizontalFirst // dragged away horizontally -> first segment horizontal
+            : Wire::Elbow::VerticalFirst;  // dragged away vertically   -> first segment vertical
+        connecting_context.elbowLocked = true;
     }
 
     bool found_target = false;

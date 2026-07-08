@@ -21,7 +21,7 @@ public:
 		const std::unordered_map<int, std::vector<int>>& selectedWireIDs, const std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments);
 	int addComponent(NodeInfo::Type type, Vector2 position);
 	void set_component_input_wire(int componentID, int input_index, int wire_ID);
-	int addWire(PinRef input, Vector2 inputPos, PinRef output, Vector2 outputPos);
+	int addWire(PinRef input, Vector2 inputPos, PinRef output, Vector2 outputPos, Wire::Elbow first = Wire::Elbow::HorizontalFirst);
 	void removeComponent(int id);
 	void removeWire(int id);
 	void removeWireNodes(int wireID, const std::vector<int>& nodeIDs);
@@ -29,8 +29,8 @@ public:
 	void selectInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
 		std::unordered_map<int, std::vector<int>>& selectedWireNodes, std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments) const;
 	void restoreComponent(int id, NodeInfo nodeInfo);
-	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos);
-	int extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest);
+	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos, Wire::Elbow first = Wire::Elbow::HorizontalFirst);
+	int extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest, Wire::Elbow first = Wire::Elbow::HorizontalFirst);
 
 
 	bool wireExists(int id) const {

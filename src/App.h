@@ -26,9 +26,11 @@ struct ConnectingContext {
 	int wireID;
 	Vector2 sourcePos;
 	WireSegment sourceSegment;
-	
+
 	int sourceComponentID;
 	PinRef targetPin;
+	Wire::Elbow elbow = Wire::Elbow::HorizontalFirst; // which way the L-route bends
+	bool elbowLocked = false;                         // held once set; re-armed by returning to the source
 };
 
 struct SelectionContext {
