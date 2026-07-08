@@ -70,7 +70,8 @@ void App::HandleInput()
 
         for (auto& pair : selected_wire_nodes) {
             int wireID = pair.first;
-            circuit.removeWireNodes(wireID, pair.second);
+            if (circuit.wireExists(wireID))
+                circuit.removeWireNodes(wireID, pair.second);
         }
 
         for (auto& pair : selected_wire_segments) {
@@ -603,6 +604,11 @@ std::vector<NodeInfo> App::getNodeInfoCopy(std::vector<int>& ids)
                 continue;
             }
 
+            if (!circuit.wireExists(input_wire_id) || circuit.getWire(input_wire_id).Nodes.empty()) {
+                nodes[index].input_components.push_back(-1);
+                continue;
+            }
+
             Wire& wire = circuit.getWire(input_wire_id);
             int source_component_id = wire.Nodes[0].Pin.ComponentID;
             if (std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id) != selected_component_ids.end()) {
@@ -629,6 +635,11 @@ std::vector<NodeInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
 		std::vector<int> input_component_ids;
         for (int input_wire_id : component->m_inputWireIds) {
             if (input_wire_id == -1) {
+                input_component_ids.push_back(-1);
+                continue;
+            }
+
+            if (!circuit.wireExists(input_wire_id) || circuit.getWire(input_wire_id).Nodes.empty()) {
                 input_component_ids.push_back(-1);
                 continue;
             }

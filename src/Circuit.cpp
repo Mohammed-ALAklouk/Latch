@@ -4,9 +4,13 @@ void Circuit::evaluate()
 {
 	for (auto& wire : m_wires)
 	{
+		if (wire.Nodes.empty()) continue; // Nodes[0] is the source pin; skip a torn-down wire
+
 		int source_component_id = wire.Nodes[0].Pin.ComponentID;
-		int source_output_index = wire.Nodes[0].Pin.PinIndex; 
-		wire.Value = getComponent(source_component_id).get()->m_outputValues[source_output_index];
+		int source_output_index = wire.Nodes[0].Pin.PinIndex;
+		if (!componentExists(source_component_id)) continue;
+
+		wire.Value = getComponent(source_component_id)->m_outputValues[source_output_index];
 	}
 	
 	for (auto& component : m_components)
@@ -21,7 +25,7 @@ std::vector<LogicLevel> Circuit::getComponentInputValues(std::unique_ptr<Gate>& 
 	for (int i = 0; i < component->m_inputWireIds.size(); ++i)
 	{
 		int wire_id = component->m_inputWireIds[i];
-		if (wire_id == -1)
+		if (wire_id == -1 || !wireExists(wire_id))
 		{
 			input_values.push_back(LogicLevel::UNDEFINED);
 			continue;
@@ -142,17 +146,29 @@ void Circuit::removeWire(int id)
 	}
 }
 
-void Circuit::removeWireNodes(int wireID, const std::vector<int>& nodeIDs)
+// Clear this wire's id from the input/output slots of every component that a
+// removed PIN node referenced.
+void Circuit::disconnectRemovedPins(int wireID, const std::vector<WireNode>& removedPinNodes)
 {
-	auto& wire = getWire(wireID);
-	auto& removedPinNodes = wire.removeNodes(nodeIDs);
 	for (auto& node : removedPinNodes) {
+		if (!componentExists(node.Pin.ComponentID)) continue;
 		auto& comp = getComponent(node.Pin.ComponentID);
-		auto& inputIt = std::find(comp->m_inputWireIds.begin(), comp->m_inputWireIds.end(), wireID);
-		auto& outputIt = std::find(comp->m_outputWireIds.begin(), comp->m_outputWireIds.end(), wireID);
+
+		auto inputIt = std::find(comp->m_inputWireIds.begin(), comp->m_inputWireIds.end(), wireID);
 		if (inputIt != comp->m_inputWireIds.end()) *inputIt = -1;
+
+		auto outputIt = std::find(comp->m_outputWireIds.begin(), comp->m_outputWireIds.end(), wireID);
 		if (outputIt != comp->m_outputWireIds.end()) *outputIt = -1;
 	}
+}
+
+void Circuit::removeWireNodes(int wireID, const std::vector<int>& nodeIDs)
+{
+	if (!wireExists(wireID)) return;
+
+	auto& wire = getWire(wireID);
+	auto removedPinNodes = wire.removeNodes(nodeIDs);
+	disconnectRemovedPins(wireID, removedPinNodes);
 
 	if (wire.Nodes.size() == 0)
 		removeWire(wireID);
@@ -160,15 +176,11 @@ void Circuit::removeWireNodes(int wireID, const std::vector<int>& nodeIDs)
 
 void Circuit::removeWireSegments(int wireID, const std::vector<WireSegment>& segments)
 {
+	if (!wireExists(wireID)) return;
+
 	auto& wire = getWire(wireID);
-	auto& removedPinNodes = wire.removeSegments(segments);
-	for (auto& node : removedPinNodes) {
-		auto& comp = getComponent(node.Pin.ComponentID);
-		auto& inputIt = std::find(comp->m_inputWireIds.begin(), comp->m_inputWireIds.end(), wireID);
-		auto& outputIt = std::find(comp->m_outputWireIds.begin(), comp->m_outputWireIds.end(), wireID);
-		if (inputIt != comp->m_inputWireIds.end()) *inputIt = -1;
-		if (outputIt != comp->m_outputWireIds.end()) *outputIt = -1;
-	}
+	auto removedPinNodes = wire.removeSegments(segments);
+	disconnectRemovedPins(wireID, removedPinNodes);
 
 	if (wire.Nodes.size() == 0)
 		removeWire(wireID);
@@ -232,22 +244,22 @@ void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 
 int Circuit::extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos)
 {
-	auto& wire = getWire(wireID);
-	wire.extendTo(sourceNodeID, targetPin, targetPos);
-	if (targetPin.ComponentID != -1) {
-		auto& target_component = getComponent(targetPin.ComponentID);
-		target_component->m_inputWireIds[targetPin.PinIndex] = wireID;
-	}
+	if (!wireExists(wireID)) return -1;
+
+	getWire(wireID).extendTo(sourceNodeID, targetPin, targetPos);
+	if (targetPin.ComponentID != -1)
+		set_component_input_wire(targetPin.ComponentID, targetPin.PinIndex, wireID);
+
 	return wireID;
 }
 
 int Circuit::extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest)
 {
-	auto& wire = getWire(wireID);
-	wire.extendTo(segment, source, targetPin, dest);
-	if (targetPin.ComponentID != -1) {
-		auto& target_component = getComponent(targetPin.ComponentID);
-		target_component->m_inputWireIds[targetPin.PinIndex] = wireID;
-	}
+	if (!wireExists(wireID)) return -1;
+
+	getWire(wireID).extendTo(segment, source, targetPin, dest);
+	if (targetPin.ComponentID != -1)
+		set_component_input_wire(targetPin.ComponentID, targetPin.PinIndex, wireID);
+
 	return wireID;
 }

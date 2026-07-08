@@ -2,6 +2,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <cassert>
 #include "Gate.h"
 #include "Wire.h"
 #include "IdManager.h"
@@ -36,15 +37,26 @@ public:
 		return m_wire_ids.getIndex(id) != -1;
 	}
 
+	bool componentExists(int id) const {
+		return m_component_ids.getIndex(id) != -1;
+	}
+
+	// Callers must ensure the id is live (componentExists/wireExists). The
+	// assert turns an otherwise silent m_x[-1] out-of-bounds read into a clear
+	// failure in Debug builds.
 	std::unique_ptr<Gate>& getComponent(int id) {
 		int index = m_component_ids.getIndex(id);
+		assert(index != -1 && "getComponent: invalid component id");
 		return m_components[index];
 	}
 
 	Wire& getWire(int id) {
 		int index = m_wire_ids.getIndex(id);
+		assert(index != -1 && "getWire: invalid wire id");
 		return m_wires[index];
 	}
+
+	void disconnectRemovedPins(int wireID, const std::vector<WireNode>& removedPinNodes);
 
 
 	std::vector<std::unique_ptr<Gate>> m_components;
