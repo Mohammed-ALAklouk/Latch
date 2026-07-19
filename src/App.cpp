@@ -260,7 +260,32 @@ void App::Draw()
 
     DrawGrid();
 
-	circuit.draw(selected_component_ids, hovered_component_id, selected_wire_nodes, selected_wire_segments);
+    // While dragging, hide the nodes the preview is about to redraw at a new
+    // spot (moved source pins + dragged wire nodes) so the real geometry and the
+    // preview don't render on top of each other. Input pin nodes stay -- the
+    // reroute keeps them (as bends) and the preview only adds a leg.
+    std::unordered_map<int, std::vector<int>> hidden_wire_nodes;
+    if (current_mouse_state == MouseState::Dragging) {
+        for (int id : selected_component_ids) {
+            auto& component = circuit.getComponent(id);
+            for (int j = 0; j < component->m_outputWireIds.size(); ++j) {
+                int wireID = component->m_outputWireIds[j];
+                if (wireID == -1) continue;
+                int nodeID = circuit.getWire(wireID).findNodebyPin({ component->m_id, j });
+                if (nodeID != -1) hidden_wire_nodes[wireID].push_back(nodeID);
+            }
+            for (int i = 0; i < component->m_inputWireIds.size(); ++i) {
+                int wireID = component->m_inputWireIds[i];
+                if (wireID == -1) continue;
+                int nodeID = circuit.getWire(wireID).findNodebyPin({ component->m_id, i });
+                if (nodeID != -1) hidden_wire_nodes[wireID].push_back(nodeID);
+            }
+        }
+        for (auto& t : selected_wire_nodes)
+            hidden_wire_nodes[t.first].insert(hidden_wire_nodes[t.first].end(), t.second.begin(), t.second.end());
+    }
+
+	circuit.draw(selected_component_ids, hovered_component_id, selected_wire_nodes, selected_wire_segments, hidden_wire_nodes);
 
     if (current_mouse_state == MouseState::Connecting)
     {
@@ -294,6 +319,63 @@ void App::Draw()
 			DrawCircleV(route[1], 5, line_color);
         
 
+    }
+    else if (current_mouse_state == MouseState::Dragging)
+    {
+        auto drawLeg = [](const std::vector<Vector2>& pts, Color c) {
+            for (size_t k = 0; k + 1 < pts.size(); ++k)
+                DrawLineEx(pts[k], pts[k + 1], 3, c);
+        };
+
+        // Preview the reroute for every wire attached to a moved gate. Mirrors
+        // UpdateDraggingState's release path, but reads geometry only: same
+        // alreadyMoved skip, and neighbors that are dragged along anchor at
+        // their post-move positions (the commit translates them first).
+        static const std::vector<int> no_nodes;
+        auto selectedNodesOf = [&](int wireID) -> const std::vector<int>& {
+            auto it = selected_wire_nodes.find(wireID);
+            return it != selected_wire_nodes.end() ? it->second : no_nodes;
+        };
+        auto contains = [](const std::vector<int>& v, int x) {
+            return std::find(v.begin(), v.end(), x) != v.end();
+        };
+
+        for (int id : selected_component_ids) {
+            auto& component = circuit.getComponent(id);
+
+            for (int j = 0; j < component->m_outputWireIds.size(); ++j) {
+                int wireID = component->m_outputWireIds[j];
+                if (wireID == -1) continue;
+                auto& wire = circuit.getWire(wireID);
+                int nodeID = wire.findNodebyPin({ component->m_id, j });
+                if (nodeID == -1) continue;
+                const auto& moving = selectedNodesOf(wireID);
+                if (contains(moving, nodeID)) continue; // group preview covers it
+                for (auto& leg : wire.previewMoveLegs(nodeID, component->getOutputPosition(j), dragging_context.elbow, moving, dragging_context.snapped_delta))
+                    drawLeg(leg, LogicLevelColors[wire.Value]);
+            }
+
+            for (int i = 0; i < component->m_inputWireIds.size(); ++i) {
+                int wireID = component->m_inputWireIds[i];
+                if (wireID == -1) continue;
+                auto& wire = circuit.getWire(wireID);
+                int nodeID = wire.findNodebyPin({ component->m_id, i });
+                if (nodeID == -1) continue;
+                const auto& moving = selectedNodesOf(wireID);
+                if (contains(moving, nodeID)) continue; // group preview covers it
+                // input pin node moves to the new pin position (mirrors moveNodeWithElbow)
+                for (auto& leg : wire.previewMoveLegs(nodeID, component->getInputPosition(i), dragging_context.elbow, moving, dragging_context.snapped_delta))
+                    drawLeg(leg, LogicLevelColors[wire.Value]);
+            }
+        }
+
+        // Selected wire nodes translate by the accumulated delta.
+        for (auto& t : selected_wire_nodes) {
+            if (!circuit.wireExists(t.first)) continue;
+            auto& wire = circuit.getWire(t.first);
+            for (auto& leg : wire.previewMoveGroupLegs(t.second, dragging_context.snapped_delta, dragging_context.elbow))
+                drawLeg(leg, LogicLevelColors[wire.Value]);
+        }
     }
     else if (current_mouse_state == MouseState::Selecting)
     {
@@ -484,9 +566,75 @@ void App::UpdatePanningState(const Vector2& world_mouse_pos)
 void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 {
     if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
+        for (auto t: selected_wire_nodes) {
+            if (!circuit.wireExists(t.first)) continue;
+            circuit.getWire(t.first).moveNodesWithElbow(t.second, dragging_context.snapped_delta, dragging_context.elbow);
+		}
+
+        for (int id: selected_component_ids) {
+            auto& component = circuit.getComponent(id);
+            if (dragging_context.snapped_delta.x == 0 && dragging_context.snapped_delta.y == 0) continue; // gate didn't move; nothing to reroute
+
+            // output side: each output pin drives one wire; move its source node
+            // (never demote -- it must stay the wire's source) and re-route with the same elbow.
+            for (int j = 0; j < component->m_outputWireIds.size(); ++j) {
+                int wireID = component->m_outputWireIds[j];
+                if (wireID == -1) continue;
+                auto& wire = circuit.getWire(wireID);
+                int nodeID = wire.findNodebyPin({ component->m_id, j });
+                if (nodeID == -1) continue;
+
+                auto it = selected_wire_nodes.find(wireID);
+                bool alreadyMoved = it != selected_wire_nodes.end() &&
+                    std::find(it->second.begin(), it->second.end(), nodeID) != it->second.end();
+                if (alreadyMoved) continue;
+
+                wire.moveNodeWithElbow(nodeID, component->getOutputPosition(j), dragging_context.elbow);
+            }
+
+            for (int i = 0; i < component->m_inputWireIds.size(); ++i) {
+                int wireID = component->m_inputWireIds[i];
+                if (wireID != -1) {
+                    auto& wire = circuit.getWire(wireID);
+					int nodeID = wire.findNodebyPin({ component->m_id, i });
+                    if (nodeID == -1) continue;
+
+                    auto it = selected_wire_nodes.find(wireID);
+                    bool alreadyMoved = it != selected_wire_nodes.end() &&
+                        std::find(it->second.begin(), it->second.end(), nodeID) != it->second.end();
+                    
+                    if (alreadyMoved) continue;
+
+					// if the component lands on a node we turn it into a junction, otherwise we just move the node to the new position
+					int destinationNodeID = wire.findNodeAt(component->getInputPosition(i));
+                    if (destinationNodeID != -1) {
+						wire.promoteNodeToPin(destinationNodeID, { component->m_id, i });
+                        wire.removeNodes({ nodeID });
+                    }
+                    else {
+                        wire.moveNodeWithElbow(nodeID, component->getInputPosition(i), dragging_context.elbow);
+                    }
+                }
+                else {
+                    for (auto& wire : circuit.m_wires) {
+                        for (auto segment: wire.Segments) {
+                            if (component->m_inputWireIds[i] == -1 && wire.segmentContainsPoint(segment, component->getInputPosition(i))) {
+								wire.splicePinIntoSegment({component->m_id, i}, component->getInputPosition(i));
+                                component->m_inputWireIds[i] = wire.ID; // register the connection so evaluate() reads it
+                                break;
+                            }
+						}
+                        
+                    }
+                }
+			}
+		}
+
         action_manager.addAction<ComponentsMovedAction>(selected_component_ids, dragging_context.snapped_delta);
 		current_mouse_state = MouseState::Idle;
         dragging_context = { {0, 0}, {0, 0} };
+        
+
 
         return;
     }
@@ -498,6 +646,23 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 
 	dragging_context.snapped_delta.x += delta.x;
 	dragging_context.snapped_delta.y += delta.y;
+
+    // Pick the reroute elbow from how you dragged, mirroring the connecting logic:
+    // lock it once you commit to a direction, re-arm when you return near the start.
+    Vector2 fromStart = { world_mouse_pos.x - dragging_context.initial_mouse_pos.x,
+                          world_mouse_pos.y - dragging_context.initial_mouse_pos.y };
+    float distSq = fromStart.x * fromStart.x + fromStart.y * fromStart.y;
+    const float resetDist = (float)cell_size;      // back near the start -> re-arm
+    const float armDist = (float)cell_size * 1.5f; // dragged this far -> lock the bend in
+
+    if (distSq < resetDist * resetDist)
+        dragging_context.elbowLocked = false;
+    else if (!dragging_context.elbowLocked && distSq > armDist * armDist) {
+        dragging_context.elbow = (fabsf(fromStart.x) > fabsf(fromStart.y))
+            ? Wire::Elbow::HorizontalFirst // dragged mostly horizontally -> first leg horizontal
+            : Wire::Elbow::VerticalFirst;  // dragged mostly vertically   -> first leg vertical
+        dragging_context.elbowLocked = true;
+    }
 
     for (int id : selected_component_ids) {
         auto& component = circuit.getComponent(id);
@@ -637,7 +802,7 @@ std::vector<NodeInfo> App::getNodeInfoCopy(std::vector<int>& ids)
             }
 
             Wire& wire = circuit.getWire(input_wire_id);
-            int source_component_id = wire.Nodes[0].Pin.ComponentID;
+            int source_component_id = wire.getSourcePin().ComponentID;
             if (std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id) != selected_component_ids.end()) {
                 int source_index = std::distance(selected_component_ids.begin(), std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id));
                 nodes[index].input_components.push_back(source_index);
@@ -672,7 +837,7 @@ std::vector<NodeInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
             }
 
             Wire& wire = circuit.getWire(input_wire_id);
-            int source_component_id = wire.Nodes[0].Pin.ComponentID;
+            int source_component_id = wire.getSourcePin().ComponentID;
             input_component_ids.push_back(source_component_id);
 		}
 

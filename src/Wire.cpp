@@ -361,11 +361,17 @@ std::vector<WireNode> Wire::clearAll()
 //  Rendering
 // ===========================================================================
 
-void Wire::draw(const std::vector<int>& selectedNodeIDs, const std::vector<WireSegment>& selectedSegments) const {
+void Wire::draw(const std::vector<int>& selectedNodeIDs, const std::vector<WireSegment>& selectedSegments, const std::vector<int>& hiddenNodeIDs) const {
 	Color wire_color = LogicLevelColors[Value];
+
+	auto hidden = [&](int nodeID) {
+		return std::find(hiddenNodeIDs.begin(), hiddenNodeIDs.end(), nodeID) != hiddenNodeIDs.end();
+	};
 
 	for (auto& segment : Segments)
 	{
+		if (hidden(segment.first) || hidden(segment.second)) continue; // a moved node's leg; the preview draws it instead
+
 		wire_color = LogicLevelColors[Value];
 		if (std::find(selectedSegments.begin(), selectedSegments.end(), segment) != selectedSegments.end())
 			wire_color = SelectedColor;
@@ -376,6 +382,8 @@ void Wire::draw(const std::vector<int>& selectedNodeIDs, const std::vector<WireS
 	}
 
 	for (auto& node : Nodes) {
+		if (hidden(node.ID)) continue; // drawn at its new spot by the preview
+
 		bool selected = std::find(selectedNodeIDs.begin(), selectedNodeIDs.end(), node.ID) != selectedNodeIDs.end();
 		wire_color = LogicLevelColors[Value];
 		if (selected) wire_color = SelectedColor;

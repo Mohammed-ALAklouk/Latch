@@ -18,6 +18,8 @@ struct PanningContext {
 struct DraggingContext {
 	Vector2 initial_mouse_pos;
 	Vector2 snapped_delta;
+	Wire::Elbow elbow = Wire::Elbow::HorizontalFirst; // reroute bend, chosen from the drag direction
+	bool elbowLocked = false;                         // held once committed; re-armed near the start
 };
 
 struct ConnectingContext {

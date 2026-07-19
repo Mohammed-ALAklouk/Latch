@@ -4,13 +4,11 @@ void Circuit::evaluate()
 {
 	for (auto& wire : m_wires)
 	{
-		if (wire.Nodes.empty()) continue; // Nodes[0] is the source pin; skip a torn-down wire
+		PinRef source = wire.getSourcePin();
+		if (source.ComponentID == -1) continue; // torn-down / sourceless wire
+		if (!componentExists(source.ComponentID)) continue;
 
-		int source_component_id = wire.Nodes[0].Pin.ComponentID;
-		int source_output_index = wire.Nodes[0].Pin.PinIndex;
-		if (!componentExists(source_component_id)) continue;
-
-		wire.Value = getComponent(source_component_id)->m_outputValues[source_output_index];
+		wire.Value = getComponent(source.ComponentID)->m_outputValues[source.PinIndex];
 	}
 	
 	for (auto& component : m_components)
@@ -42,8 +40,9 @@ void Circuit::evaluateComponent(std::unique_ptr<Gate>& component)
 	component->evaluate(input_values);
 }
 
-void Circuit::draw(const std::vector<int>& selectedComponentIDs, const int hoveredComponentID, 
-	const std::unordered_map<int, std::vector<int>>& selectedWireIDs, const std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments)
+void Circuit::draw(const std::vector<int>& selectedComponentIDs, const int hoveredComponentID,
+	const std::unordered_map<int, std::vector<int>>& selectedWireIDs, const std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments,
+	const std::unordered_map<int, std::vector<int>>& hiddenWireNodes)
 {
 	for (auto& component : m_components)
 	{
@@ -58,7 +57,8 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, const int hover
 	{
 		std::vector<int> selectedNodes = selectedWireIDs.find(wire.ID) != selectedWireIDs.end() ? selectedWireIDs.at(wire.ID) : std::vector<int>();
 		std::vector<WireSegment> selectedSegments = selectedWireSegments.find(wire.ID) != selectedWireSegments.end() ? selectedWireSegments.at(wire.ID) : std::vector<WireSegment>();
-		wire.draw(selectedNodes,  selectedSegments);
+		std::vector<int> hiddenNodes = hiddenWireNodes.find(wire.ID) != hiddenWireNodes.end() ? hiddenWireNodes.at(wire.ID) : std::vector<int>();
+		wire.draw(selectedNodes, selectedSegments, hiddenNodes);
 	}
 }
 
