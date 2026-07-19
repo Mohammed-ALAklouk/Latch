@@ -23,7 +23,7 @@ struct DraggingContext {
 };
 
 struct ConnectingContext {
-	enum ConnectionType {PIN, JUNCTION} type;
+	enum ConnectionType {PIN, JUNCTION, INPUT} type; // PIN = dragging from an output pin, INPUT = from a free input pin
 	int sourceNodeID;
 	int wireID;
 	Vector2 sourcePos;
@@ -31,6 +31,7 @@ struct ConnectingContext {
 
 	int sourceComponentID;
 	PinRef targetPin;
+	int sourceInputIndex = -1;                        // which input pin the drag started from (type == INPUT)
 	Wire::Elbow elbow = Wire::Elbow::HorizontalFirst; // which way the L-route bends
 	bool elbowLocked = false;                         // held once set; re-armed by returning to the source
 };

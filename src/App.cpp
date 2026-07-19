@@ -299,7 +299,13 @@ void App::Draw()
 		    auto& sourceComponent = circuit.getComponent(connecting_context.sourceComponentID);
             start = sourceComponent->getOutputPosition();
 			line_color = LogicLevelColors[sourceComponent->m_outputValues[0]];
-        } 
+        }
+        else if (connecting_context.type == ConnectingContext::ConnectionType::INPUT)
+        {
+            auto& sourceComponent = circuit.getComponent(connecting_context.sourceComponentID);
+            start = sourceComponent->getInputPosition(connecting_context.sourceInputIndex);
+            line_color = LogicLevelColors[LogicLevel::UNDEFINED]; // nothing drives it until it lands on an output
+        }
         else if (connecting_context.sourceNodeID != -1){
             auto& sourceWire = circuit.getWire(connecting_context.wireID);
 			start = sourceWire.getNodePosition(connecting_context.sourceNodeID);
@@ -504,6 +510,23 @@ void App::UpdateIdleState(const Vector2& world_mouse_pos)
 
         if (clicked_on_output_pin) return;
 
+        // a free input pin can start a connection too; the drag runs input -> output
+        bool clicked_on_input_pin = false;
+        for (auto& component : circuit.m_components) {
+            int input_index = component->inputPinsContainPoint(world_mouse_pos);
+            if (input_index != -1 && component->getInputWireId(input_index) == -1) {
+                connecting_context.type = ConnectingContext::INPUT;
+                connecting_context.sourceComponentID = component->m_id;
+                connecting_context.sourceInputIndex = input_index;
+                connecting_context.targetPin = { -1, -1 };
+                current_mouse_state = MouseState::Connecting;
+                clicked_on_input_pin = true;
+                break;
+            }
+        }
+
+        if (clicked_on_input_pin) return;
+
         for (auto& component : circuit.m_components) {
             if (component->containsPoint(world_mouse_pos)) {
                 current_mouse_state = MouseState::Dragging;
@@ -689,6 +712,49 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 
             }
         }
+        else if (connecting_context.type == ConnectingContext::INPUT) {
+            // Dragged from a free input pin. A wire is always driven by an output,
+            // so the real route runs the opposite way to the drag; flipping the
+            // elbow keeps the committed L identical to the previewed one.
+            Wire::Elbow flipped = connecting_context.elbow == Wire::Elbow::HorizontalFirst
+                ? Wire::Elbow::VerticalFirst : Wire::Elbow::HorizontalFirst;
+            PinRef input_pin = { connecting_context.sourceComponentID, connecting_context.sourceInputIndex };
+            Vector2 input_pos = circuit.getComponent(connecting_context.sourceComponentID)->getInputPosition(connecting_context.sourceInputIndex);
+
+            if (connecting_context.targetPin.ComponentID != -1) {
+                auto& driver = circuit.getComponent(connecting_context.targetPin.ComponentID);
+                int existing_wire = driver->m_outputWireIds[connecting_context.targetPin.PinIndex];
+                if (existing_wire != -1 && circuit.wireExists(existing_wire)) {
+                    // output already drives a wire; branch it to this input instead of replacing it
+                    auto& wire = circuit.getWire(existing_wire);
+                    circuit.extendWireTo(existing_wire, wire.SourceNodeID, input_pin, input_pos, flipped);
+                }
+                else {
+                    circuit.addWire(
+                        connecting_context.targetPin,
+                        driver->getOutputPosition(connecting_context.targetPin.PinIndex),
+                        input_pin,
+                        input_pos,
+                        flipped);
+                }
+            }
+            else {
+                // released over an existing wire? tap it into this input
+                for (auto& wire : circuit.m_wires) {
+                    int nodeID = wire.findNodeAt(world_mouse_pos);
+                    if (nodeID != -1) {
+                        circuit.extendWireTo(wire.ID, nodeID, input_pin, input_pos, flipped);
+                        break;
+                    }
+
+                    WireSegment segment = wire.findSegmentAt(world_mouse_pos);
+                    if (segment.first != -1) {
+                        circuit.extendWireTo(wire.ID, segment, destination_pos, input_pin, input_pos, flipped);
+                        break;
+                    }
+                }
+            }
+        }
         else {
 		    auto source_pos = circuit.getComponent(connecting_context.sourceComponentID)->getOutputPosition();
             if (source_pos.x != destination_pos.x || source_pos.y != destination_pos.y)
@@ -717,6 +783,8 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
     Vector2 dragSource;
     if (connecting_context.type == ConnectingContext::PIN)
         dragSource = circuit.getComponent(connecting_context.sourceComponentID)->getOutputPosition();
+    else if (connecting_context.type == ConnectingContext::INPUT)
+        dragSource = circuit.getComponent(connecting_context.sourceComponentID)->getInputPosition(connecting_context.sourceInputIndex);
     else if (connecting_context.sourceNodeID != -1)
         dragSource = circuit.getWire(connecting_context.wireID).getNodePosition(connecting_context.sourceNodeID);
     else
@@ -739,12 +807,22 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
 
     bool found_target = false;
     for (auto& Component : circuit.m_components) {
-        auto input_pin_index = Component->inputPinsContainPoint(world_mouse_pos);
-
-        if (input_pin_index != -1 && Component->getInputWireId(input_pin_index) == -1) {
-            connecting_context.targetPin = { Component->m_id, input_pin_index };
-            found_target = true;
-            return;
+        if (connecting_context.type == ConnectingContext::INPUT) {
+            // dragging from an input: the thing we can land on is an output pin
+            auto output_pin_index = Component->outputPinContainsPoint(world_mouse_pos);
+            if (output_pin_index != -1) {
+                connecting_context.targetPin = { Component->m_id, output_pin_index };
+                found_target = true;
+                return;
+            }
+        }
+        else {
+            auto input_pin_index = Component->inputPinsContainPoint(world_mouse_pos);
+            if (input_pin_index != -1 && Component->getInputWireId(input_pin_index) == -1) {
+                connecting_context.targetPin = { Component->m_id, input_pin_index };
+                found_target = true;
+                return;
+            }
         }
     }
 
