@@ -107,28 +107,40 @@ int Circuit::addWire(PinRef source, Vector2 sourcePos, PinRef destination, Vecto
 
 void Circuit::removeComponent(int id)
 {
-	/*
-	* TODO: Rewrite to use the new wire system
-	* 
 	int index = m_component_ids.getIndex(id);
-	if (index != -1) {
-		auto& component = getComponent(id);
-		auto input_wires_copy = component->m_inputWireIds;
+	if (index == -1) return;
+	auto& component = getComponent(id);
+	int input_index = 0;
+	for (int wire_id : component->m_inputWireIds) {
+		if (wire_id != -1) {
+			auto& wire = getWire(wire_id);
+			Vector2 inputPos = component->getInputPosition(input_index);
+			auto node = wire.findNodeAt(inputPos);
+			wire.removeNodes({ node });
+		}
+		input_index++;
+	}
 
-		for (int input_id : input_wires_copy) removeWire(input_id);
-
-		auto output_wires_copy = component->m_outputWireIds;
-		for (int output_id : output_wires_copy) removeWire(output_id);
-
-		int lastIndex = (int)m_components.size() - 1;
-		if (index != lastIndex) {
-			std::swap(m_components[index], m_components[lastIndex]);
-			m_component_ids.setIndex(m_components[index]->m_id, index);
+	int output_index = 0;
+	for (int wire_id : component->m_outputWireIds) {
+		if (wire_id != -1) {
+			auto& wire = getWire(wire_id);
+			Vector2 outputPos = component->getOutputPosition(output_index);
+			auto node = wire.findNodeAt(outputPos);
+			wire.removeNodes({ node });
 		}
 
-		m_components.pop_back();
-		m_component_ids.releaseId(id);
-	}*/
+		output_index++;
+	}
+
+	int lastIndex = (int)m_components.size() - 1;
+	if (index != lastIndex) {
+		std::swap(m_components[index], m_components[lastIndex]);
+		m_component_ids.setIndex(m_components[index]->m_id, index);
+	}
+
+	m_components.pop_back();
+	m_component_ids.releaseId(id);
 }
 
 void Circuit::removeWire(int id)

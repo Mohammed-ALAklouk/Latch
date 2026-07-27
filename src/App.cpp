@@ -323,8 +323,6 @@ void App::Draw()
 
         if (route.size() == 3) 
 			DrawCircleV(route[1], 5, line_color);
-        
-
     }
     else if (current_mouse_state == MouseState::Dragging)
     {
