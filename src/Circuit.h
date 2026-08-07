@@ -20,7 +20,7 @@ public:
 	void draw(const std::vector<int>& selectedComponentIDs, const int hoveredComponentID,
 		const std::unordered_map<int, std::vector<int>>& selectedWireIDs, const std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments,
 		const std::unordered_map<int, std::vector<int>>& hiddenWireNodes = {});
-	int addComponent(NodeInfo::Type type, Vector2 position);
+	int addComponent(componentInfo::Type type, Vector2 position);
 	void set_component_input_wire(int componentID, int input_index, int wire_ID);
 	int addWire(PinRef input, Vector2 inputPos, PinRef output, Vector2 outputPos, Wire::Elbow first = Wire::Elbow::HorizontalFirst);
 	void removeComponent(int id);
@@ -29,10 +29,11 @@ public:
 	void removeWireSegments(int wireID, const std::vector<WireSegment>& segments);
 	void selectInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
 		std::unordered_map<int, std::vector<int>>& selectedWireNodes, std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments) const;
-	void restoreComponent(int id, NodeInfo nodeInfo);
+	void restoreComponent(int id, componentInfo nodeInfo);
 	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos, Wire::Elbow first = Wire::Elbow::HorizontalFirst);
 	int extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest, Wire::Elbow first = Wire::Elbow::HorizontalFirst);
-
+	
+	void paste(const std::vector<Wire>& wires, const std::vector<componentInfo>& components, const Vector2 displacement);
 
 	bool wireExists(int id) const {
 		return m_wire_ids.getIndex(id) != -1;
@@ -57,7 +58,10 @@ public:
 		return m_wires[index];
 	}
 
+	void restoreDeleted(std::vector<componentInfo> componentIDs, std::vector<Wire> wires);
+	
 	void disconnectRemovedPins(int wireID, const std::vector<WireNode>& removedPinNodes);
+	
 
 
 	std::vector<std::unique_ptr<Gate>> m_components;

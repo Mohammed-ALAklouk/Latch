@@ -2,7 +2,7 @@
 #include <vector>
 #include "raylib.h"
 
-struct NodeInfo {
+struct componentInfo {
 	enum Type
 	{
 		AND,
@@ -19,6 +19,8 @@ struct NodeInfo {
 	};
 
 	Type type;
+	int id;
 	Vector2 position;
 	std::vector<int> input_components;
+	std::vector<int> output_components;
 };

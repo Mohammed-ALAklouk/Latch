@@ -16,7 +16,7 @@ class Action {
 
 class ComponentPlacedAction : public Action {
 	public:
-	ComponentPlacedAction(int componentID, NodeInfo nodeInfo) : componentID(componentID), nodeInfo(nodeInfo) {}
+	ComponentPlacedAction(int componentID, componentInfo nodeInfo) : componentID(componentID), nodeInfo(nodeInfo) {}
 	void undo(Circuit& Circuit) override {
 		Circuit.removeComponent(componentID);
 	}
@@ -26,7 +26,7 @@ class ComponentPlacedAction : public Action {
 	}
 
 	int componentID;
-	NodeInfo nodeInfo;
+	componentInfo nodeInfo;
 
 	virtual ~ComponentPlacedAction() = default;
 };
@@ -70,7 +70,7 @@ class ComponentsMovedAction : public Action {
 
 class ComponentsDeletedAction : public Action {
 public:
-	ComponentsDeletedAction(std::vector<NodeInfo> nodesInfo, std::vector<int> IDs) : nodeInfo(nodesInfo), IDs(IDs) {}
+	ComponentsDeletedAction(std::vector<componentInfo> nodesInfo, std::vector<int> IDs) : nodeInfo(nodesInfo), IDs(IDs) {}
 	void undo(Circuit& Circuit) override {
 		for (size_t i = 0; i < nodeInfo.size(); ++i) {
 			Circuit.restoreComponent(IDs[i], nodeInfo[i]);
@@ -83,7 +83,7 @@ public:
 		}
 	}
 
-	std::vector<NodeInfo> nodeInfo;
+	std::vector<componentInfo> nodeInfo;
 	std::vector<int> IDs;
 };
 
@@ -108,7 +108,7 @@ class WireDeletedAction : public Action {
 
 class PasteAction : public Action {
 	public:
-	PasteAction(std::vector<int> ids, std::vector<NodeInfo>& nodesInfo) : ids(ids), nodesInfo(nodesInfo) {
+	PasteAction(std::vector<int> ids, std::vector<componentInfo>& nodesInfo) : ids(ids), nodesInfo(nodesInfo) {
 		
 	}
 	void undo(Circuit& Circuit) override {
@@ -123,7 +123,7 @@ class PasteAction : public Action {
 		}
 	}
 
-	std::vector<NodeInfo> nodesInfo;
+	std::vector<componentInfo> nodesInfo;
 	std::vector<int> ids;
 };
 

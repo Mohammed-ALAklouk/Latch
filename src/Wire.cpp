@@ -7,6 +7,31 @@ Wire::Wire(int id, PinRef source, Vector2 sourcePos, PinRef destination, Vector2
 	extendTo(SourceNodeID, destination, destPos, first);
 }
 
+Wire::Wire(const int id, const Wire& other, const std::unordered_map<int, int>& oldToNewComponentIDMap, const Vector2 displacement)
+{
+	*this = other;
+	ID = id;
+	Value = LogicLevel::UNDEFINED;
+	
+	for (auto& node : Nodes) {
+		if (node.Pin.ComponentID == -1) continue;
+		auto it = oldToNewComponentIDMap.find(node.Pin.ComponentID);
+		if (it != oldToNewComponentIDMap.end()) {
+			node.Pin.ComponentID = it->second;
+			continue;
+		}
+
+		demoteNodeToJunction(node.ID);
+	}
+
+	for (auto& node : Nodes) {
+		node.Position.x += displacement.x;
+		node.Position.y += displacement.y;
+	}
+
+	normalize();
+}
+
 // ===========================================================================
 //  Read-only accessors
 // ===========================================================================
@@ -297,13 +322,12 @@ std::vector<WireNode> Wire::pruneOrphans()
 {
 	std::vector<WireNode> removedPins;
 	if (Nodes.empty()) return removedPins;
-
-	int root = (node_id_manager.getIndex(SourceNodeID) != -1) ? SourceNodeID : Nodes[0].ID;
+	if (SourceNodeID == -1 || node_id_manager.getIndex(SourceNodeID) == -1) return {};
 
 	std::unordered_set<int> visited;
 	std::stack<int> toVisit;
-	visited.insert(root);
-	toVisit.push(root);
+	visited.insert(SourceNodeID);
+	toVisit.push(SourceNodeID);
 
 	while (!toVisit.empty()) {
 		int cur = toVisit.top();

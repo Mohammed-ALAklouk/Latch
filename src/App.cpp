@@ -51,7 +51,8 @@ void App::HandleInput()
 		world_mouse_pos.x = int(world_mouse_pos.x / cell_size) * cell_size;
 		world_mouse_pos.y = int(world_mouse_pos.y / cell_size) * cell_size;
 		int new_id = circuit.addComponent(selected_component_type, world_mouse_pos);
-        action_manager.addAction<ComponentPlacedAction>(new_id, NodeInfo{selected_component_type, world_mouse_pos, {}});
+		auto& component = circuit.getComponent(new_id);
+        action_manager.addAction<ComponentPlacedAction>(new_id, component->getComponentInfo());
         gate_placed = true;
     }
 
@@ -86,11 +87,24 @@ void App::HandleInput()
     if (IsKeyDown(KEY_LEFT_CONTROL))
     {
         if (IsKeyPressed(KEY_C)) {
-            copy_of_components = getNodeInfoCopy(selected_component_ids);
-            
-			Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
-			Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
+            Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+            Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
 
+            copy_of_components = getNodeInfoCopy(selected_component_ids);
+            copy_of_wires.clear();
+            for (const auto& pair : selected_wire_nodes) {
+                auto& wire = circuit.getWire(pair.first);
+                copy_of_wires.push_back(wire);
+
+                for (const auto& nodeID : pair.second) {
+                    Vector2 nodePos = wire.getNodePosition(nodeID);
+                    if (nodePos.x < min.x) min.x = nodePos.x;
+                    if (nodePos.y < min.y) min.y = nodePos.y;
+                    if (nodePos.x > max.x) max.x = nodePos.x;
+                    if (nodePos.y > max.y) max.y = nodePos.y;
+				}
+            }
+			
             for (const auto& component : copy_of_components) {
                 if (component.position.x < min.x) min.x = component.position.x;
                 if (component.position.y < min.y) min.y = component.position.y;
@@ -98,46 +112,13 @@ void App::HandleInput()
                 if (component.position.y > max.y) max.y = component.position.y;
 			}
 
-			auto mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
-
-			// Center the copied components around the origin
-            for (auto& component : copy_of_components) {
-                component.position.x -= (min.x + max.x) / 2.0f;
-                component.position.y -= (min.y + max.y) / 2.0f;
-            }
+			copy_center = { (min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f };
         }
         if (IsKeyPressed(KEY_V)) {
-			// TODO: redo the pasting logic to support the new wire representation
+			Vector2 mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+			Vector2 displacement = { mouse_pos.x - copy_center.x, mouse_pos.y - copy_center.y };
 
-            /*
-            std::vector<int> new_ids;
-			std::vector<NodeInfo> pasted_components = copy_of_components;
-			auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
-            for (auto& component : pasted_components) {
-				component.position.x += world_mouse_pos.x;
-				component.position.y += world_mouse_pos.y;
-
-                int new_id = circuit.addComponent(component.type, component.position);
-				new_ids.push_back(new_id);
-            }
-            
-
-            for (int i = 0; i < pasted_components.size(); ++i) {
-                auto& component = pasted_components[i];
-                int new_id = new_ids[i];
-				int index = 0;
-                for (int& input_component : component.input_components) {
-                    if (input_component != -1) {
-                        input_component = new_ids[input_component];
-                        circuit.addWire({ input_component, 0 }, { new_id, index });
-                    }
-					++index;
-                }
-			}
-
-            action_manager.addAction<PasteAction>(new_ids, pasted_components);
-            selected_component_ids = new_ids;
-            */
+			circuit.paste(copy_of_wires, copy_of_components, displacement);
 		}
 
         if (IsKeyPressed(KEY_Z)) {
@@ -177,23 +158,23 @@ void App::UI()
     ImGui::Begin("Components");
 
     if (ImGui::Button("AND"))
-        selected_component_type = NodeInfo::Type::AND;
+        selected_component_type = componentInfo::Type::AND;
     if (ImGui::Button("NAND"))
-		selected_component_type = NodeInfo::Type::NAND;
+		selected_component_type = componentInfo::Type::NAND;
     if (ImGui::Button("OR"))
-        selected_component_type = NodeInfo::Type::OR;
+        selected_component_type = componentInfo::Type::OR;
 	if (ImGui::Button("NOR"))
-		selected_component_type = NodeInfo::Type::NOR;
+		selected_component_type = componentInfo::Type::NOR;
     if (ImGui::Button("XOR"))
-		selected_component_type = NodeInfo::Type::XOR;
+		selected_component_type = componentInfo::Type::XOR;
 	if (ImGui::Button("XNOR"))
-		selected_component_type = NodeInfo::Type::XNOR;
+		selected_component_type = componentInfo::Type::XNOR;
     if (ImGui::Button("NOT"))
-        selected_component_type = NodeInfo::Type::NOT;
+        selected_component_type = componentInfo::Type::NOT;
     if (ImGui::Button("LED"))
-		selected_component_type = NodeInfo::Type::LED;
+		selected_component_type = componentInfo::Type::LED;
     if (ImGui::Button("TOGGLE")) 
-		selected_component_type = NodeInfo::Type::TOGGLE;
+		selected_component_type = componentInfo::Type::TOGGLE;
     ImGui::End();
 
 	ImGui::Begin("Simulation");
@@ -853,73 +834,23 @@ void App::UpdateSelectingState(const Vector2& world_mouse_pos)
     circuit.selectInArea(selecting_context.selectionRect, selected_component_ids, selected_wire_nodes, selected_wire_segments);
 }
 
-std::vector<NodeInfo> App::getNodeInfoCopy(std::vector<int>& ids)
+std::vector<componentInfo> App::getNodeInfoCopy(std::vector<int>& ids)
 {
-	std::vector<NodeInfo> nodes;
+	std::vector<componentInfo> nodes;
     for (int id : ids) {
         auto& component = circuit.getComponent(id);
-        NodeInfo node_info = { component->getNodeInfoType(), {component->m_rect.x, component->m_rect.y}};
-        nodes.push_back(node_info);
+        nodes.push_back(component->getComponentInfo());
     }
-
-    int index = 0;
-    for (int id : ids) {
-
-        auto& component = circuit.getComponent(id);
-        for (int input_wire_id : component->m_inputWireIds) {
-            if (input_wire_id == -1) {
-                nodes[index].input_components.push_back(-1);
-                continue;
-            }
-
-            if (!circuit.wireExists(input_wire_id) || circuit.getWire(input_wire_id).Nodes.empty()) {
-                nodes[index].input_components.push_back(-1);
-                continue;
-            }
-
-            Wire& wire = circuit.getWire(input_wire_id);
-            int source_component_id = wire.getSourcePin().ComponentID;
-            if (std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id) != selected_component_ids.end()) {
-                int source_index = std::distance(selected_component_ids.begin(), std::find(selected_component_ids.begin(), selected_component_ids.end(), source_component_id));
-                nodes[index].input_components.push_back(source_index);
-            }
-            else {
-                nodes[index].input_components.push_back(-1);
-            }
-
-        }
-
-        index++;
-    }
-
 	return nodes;
 }
 
-std::vector<NodeInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
+std::vector<componentInfo> App::getNodeInfoDeletion(std::vector<int>& ids)
 {
-    std::vector<NodeInfo> nodes;
+    std::vector<componentInfo> nodes;
     for (int id : ids) {
         auto& component = circuit.getComponent(id);
-		std::vector<int> input_component_ids;
-        for (int input_wire_id : component->m_inputWireIds) {
-            if (input_wire_id == -1) {
-                input_component_ids.push_back(-1);
-                continue;
-            }
-
-            if (!circuit.wireExists(input_wire_id) || circuit.getWire(input_wire_id).Nodes.empty()) {
-                input_component_ids.push_back(-1);
-                continue;
-            }
-
-            Wire& wire = circuit.getWire(input_wire_id);
-            int source_component_id = wire.getSourcePin().ComponentID;
-            input_component_ids.push_back(source_component_id);
-		}
-
-        NodeInfo node_info = { component->getNodeInfoType(), {component->m_rect.x, component->m_rect.y}, input_component_ids};
-        nodes.push_back(node_info);
-    }
+        nodes.push_back(component->getComponentInfo());
+	}
     return nodes;
 }
 

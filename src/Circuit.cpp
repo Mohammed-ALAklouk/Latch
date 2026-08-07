@@ -62,9 +62,9 @@ void Circuit::draw(const std::vector<int>& selectedComponentIDs, const int hover
 	}
 }
 
-int Circuit::addComponent(NodeInfo::Type type, Vector2 position)
+int Circuit::addComponent(componentInfo::Type type, Vector2 position)
 {
-	if (type < 0 || type >= NodeInfo::COMPONENT_COUNT) return -1;
+	if (type < 0 || type >= componentInfo::COMPONENT_COUNT) return -1;
 
 	int id = m_component_ids.getNextId();
 	std::unique_ptr<Gate> new_component = std::move(GateFactories[type](id, position));
@@ -152,11 +152,16 @@ void Circuit::removeWire(int id)
 			std::swap(m_wires[index], m_wires[lastIndex]);
 			m_wire_ids.setIndex(m_wires[index].ID, index);
 		}
-
+		
 		m_wires.pop_back();
 		m_wire_ids.releaseId(id);
 	}
 }
+
+//void Circuit::restoreDeleted(std::vector<int> componentIDs, std::vector<Wire> wires)
+//{
+//
+//}
 
 // Clear this wire's id from the input/output slots of every component that a
 // removed PIN node referenced.
@@ -233,7 +238,7 @@ void Circuit::selectInArea(Rectangle selectionRect, std::vector<int>& selectedCo
 
 }
 
-void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
+void Circuit::restoreComponent(int id, componentInfo nodeInfo)
 {
 	// TODO: Restore wires as well when restoring a component
 	/*
@@ -253,6 +258,8 @@ void Circuit::restoreComponent(int id, NodeInfo nodeInfo)
 	}
 	*/
 }
+
+
 
 int Circuit::extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos, Wire::Elbow first)
 {
@@ -274,4 +281,48 @@ int Circuit::extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRe
 		set_component_input_wire(targetPin.ComponentID, targetPin.PinIndex, wireID);
 
 	return wireID;
+}
+
+void Circuit::paste(const std::vector<Wire>& wires, const std::vector<componentInfo>& components, const Vector2 displacement)
+{
+	std::unordered_map<int, int> oldToNewComponentIDMap;
+	for (auto& componentInfo : components) {
+		Vector2 newPosition = { componentInfo.position.x + displacement.x, componentInfo.position.y + displacement.y };
+		int newComponentID = addComponent(componentInfo.type, newPosition);
+		oldToNewComponentIDMap[componentInfo.id] = newComponentID;
+	}
+
+	std::unordered_map<int, int> oldToNewWireIDMap;
+	for (auto& wire : wires) {
+		int id = m_wire_ids.getNextId();
+		m_wires.push_back(Wire(id, wire, oldToNewComponentIDMap, displacement));
+		m_wire_ids.setIndex(id, m_wires.size() - 1);
+
+		oldToNewWireIDMap[wire.ID] = id;
+	}
+
+	for (auto& componentInfo : components) {
+		int newComponentID = oldToNewComponentIDMap[componentInfo.id];
+		auto& component = getComponent(newComponentID);
+		
+		for (int j = 0; j < componentInfo.input_components.size(); ++j) {
+			int oldWireID = componentInfo.input_components[j];
+			if (oldToNewWireIDMap.find(oldWireID) == oldToNewWireIDMap.end()) {
+				component->m_inputWireIds[j] = -1; 
+				continue;
+			}
+
+			component->m_inputWireIds[j] = oldToNewWireIDMap[oldWireID];
+		}
+
+		for (int j = 0; j < componentInfo.output_components.size(); ++j) {
+			int oldWireID = componentInfo.output_components[j];
+			if (oldToNewWireIDMap.find(oldWireID) == oldToNewWireIDMap.end()) {
+				component->m_outputWireIds[j] = -1; 
+				continue;
+			}
+
+			component->m_outputWireIds[j] = oldToNewWireIDMap[oldWireID];
+		}
+	}
 }

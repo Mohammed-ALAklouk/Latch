@@ -2,7 +2,7 @@
 #include <vector>
 #include <memory>
 #include "Pin.h"
-#include "NodeInfo.h"
+#include "ComponentInfo.h"
 
 #define CELL_SIZE 10.0f
 
@@ -28,13 +28,17 @@ public:
 		return m_inputWireIds[input_index];
 	}
 
+	componentInfo getComponentInfo() const {
+		return { getNodeInfoType(), m_id, { m_rect.x, m_rect.y }, m_inputWireIds, m_outputWireIds };
+	}
+
 	virtual int inputPinsContainPoint(Vector2 point) const;
 	virtual int outputPinContainsPoint(Vector2 point) const;
 
 	virtual void evaluate(const std::vector<LogicLevel>& inputs) = 0;
 	virtual void draw(std::vector<LogicLevel>& inputs, bool selected, bool highlighted) const;
 	virtual const char* getLabel() const = 0;
-	virtual NodeInfo::Type getNodeInfoType() const = 0;
+	virtual componentInfo::Type getNodeInfoType() const = 0;
 	virtual void onClick() {}
 
 	virtual Vector2 getInputPosition(int input_index) const
@@ -84,7 +88,7 @@ public:
 	}
 	
 	const char* getLabel() const override { return "AND"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::AND; }
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::AND; }
 };
 
 class OrGate : public Gate {
@@ -108,7 +112,7 @@ public:
 
 
 	const char* getLabel() const override { return "OR"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::OR; }
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::OR; }
 };
 
 class NotGate : public Gate {
@@ -130,7 +134,7 @@ class NotGate : public Gate {
 
 
 	const char* getLabel() const override { return "NOT"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::NOT; }
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::NOT; }
 };
 
 class LedGate : public Gate {
@@ -160,7 +164,7 @@ public:
 	void evaluate(const std::vector<LogicLevel>& inputs) override{
 	}
 	const char* getLabel() const override { return "LED"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::LED; }
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::LED; }
 	Vector2 getOutputPosition(int output_index = 0) const override
 	{
 		return { 0, 0 }; // No output pins
@@ -188,7 +192,7 @@ class ToggleGate : public Gate {
 	}
 
 	const char* getLabel() const override { return "TOGGLE"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::TOGGLE; }
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::TOGGLE; }
 	
 	void onClick() override {
 		m_outputValues[0] = (m_outputValues[0] == LogicLevel::HIGH) ? LogicLevel::LOW : LogicLevel::HIGH;
@@ -234,7 +238,7 @@ public:
 		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
 	}
 	const char* getLabel() const override { return "NAND"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::NAND; } 
 };
 
 class NorGate : public Gate {
@@ -254,7 +258,7 @@ public:
 		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
 	}
 	const char* getLabel() const override { return "NOR"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::NOR; } 
 };
 
 class XorGate : public Gate {
@@ -274,7 +278,7 @@ class XorGate : public Gate {
 		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
 	}
 	const char* getLabel() const override { return "XOR"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::XOR; } 
 };
 
 class XnorGate : public Gate {
@@ -295,7 +299,7 @@ class XnorGate : public Gate {
 		m_outputValues[0] = LookupTable[inputs[0] * 3 + inputs[1]];
 	}
 	const char* getLabel() const override { return "XNOR"; }
-	NodeInfo::Type getNodeInfoType() const override { return NodeInfo::Type::COMPONENT_COUNT; } // Placeholder type
+	componentInfo::Type getNodeInfoType() const override { return componentInfo::Type::XNOR; } 
 };
 
 
@@ -308,7 +312,7 @@ std::unique_ptr<Gate> makeGate(int id, Vector2 position) {
 	return std::make_unique<T>(id, position);
 }
 
-inline constexpr GateFactory GateFactories[NodeInfo::COMPONENT_COUNT] = {
+inline constexpr GateFactory GateFactories[componentInfo::COMPONENT_COUNT] = {
 	makeGate<AndGate>,     // AND
 	makeGate<NandGate>,    // NAND
 	makeGate<OrGate>,      // OR

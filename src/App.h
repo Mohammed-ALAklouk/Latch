@@ -9,6 +9,7 @@
 
 #include "Action.h"
 #include "Circuit.h"
+#include "ComponentInfo.h"
 
 struct PanningContext {
 	Vector2 initial_pos;
@@ -71,8 +72,8 @@ private:
 	void UpdateDraggingState(const Vector2& mouse_pos);
 	void UpdateConnectingState(const Vector2& mouse_pos);
 	void UpdateSelectingState(const Vector2& mouse_pos);
-	std::vector<NodeInfo > getNodeInfoCopy(std::vector<int>& ids);
-	std::vector<NodeInfo > getNodeInfoDeletion(std::vector<int>& ids);
+	std::vector<componentInfo > getNodeInfoCopy(std::vector<int>& ids);
+	std::vector<componentInfo > getNodeInfoDeletion(std::vector<int>& ids);
 
 	void clearSelection();
 	
@@ -101,7 +102,7 @@ private:
 
 	
 	MouseState current_mouse_state = MouseState::Idle;
-	NodeInfo::Type selected_component_type = NodeInfo::Type::AND;
+	componentInfo::Type selected_component_type = componentInfo::Type::AND;
 
 	PanningContext panning_context;
 	DraggingContext dragging_context;
@@ -127,7 +128,11 @@ private:
 	float time_since_last_tick = 0.0f;
 	int number_of_ticks = 0;
 
-	std::vector<NodeInfo > copy_of_components;
+	std::vector<componentInfo> copy_of_components;
+	std::vector<Wire> copy_of_wires;
+	Vector2 copy_center = { 0, 0 };
+
+
 	ActionManager action_manager;
 
 

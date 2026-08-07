@@ -26,6 +26,7 @@ public:
 	enum class Elbow { HorizontalFirst, VerticalFirst };
 
 	Wire(int id, PinRef source, Vector2 sourcePos, PinRef destination, Vector2 destPos, Elbow first = Elbow::HorizontalFirst);
+	Wire(const int id, const Wire& other, const std::unordered_map<int, int>& oldToNewComponentIDMap, const Vector2 displacement);
 
 	int findNodeAt(Vector2 pos) const;
 	WireSegment findSegmentAt(Vector2 pos) const;
