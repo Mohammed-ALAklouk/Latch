@@ -1,4 +1,4 @@
-#include "Circuit.h"
+﻿#include "Circuit.h"
 
 void Circuit::evaluate()
 {
@@ -109,28 +109,34 @@ void Circuit::removeComponent(int id)
 {
 	int index = m_component_ids.getIndex(id);
 	if (index == -1) return;
-	auto& component = getComponent(id);
-	int input_index = 0;
-	for (int wire_id : component->m_inputWireIds) {
-		if (wire_id != -1) {
-			auto& wire = getWire(wire_id);
-			Vector2 inputPos = component->getInputPosition(input_index);
-			auto node = wire.findNodeAt(inputPos);
-			wire.removeNodes({ node });
+
+	std::vector<std::pair<int, Vector2>> attachments;
+	{
+		auto& component = getComponent(id);
+		for (int i = 0; i < (int)component->m_inputWireIds.size(); ++i) {
+			if (component->m_inputWireIds[i] != -1)
+				attachments.push_back({ component->m_inputWireIds[i], component->getInputPosition(i) });
 		}
-		input_index++;
+
+		for (int i = 0; i < (int)component->m_outputWireIds.size(); ++i) {
+			if (component->m_outputWireIds[i] != -1)
+				attachments.push_back({ component->m_outputWireIds[i], component->getOutputPosition(i) });
+		}
 	}
 
-	int output_index = 0;
-	for (int wire_id : component->m_outputWireIds) {
-		if (wire_id != -1) {
-			auto& wire = getWire(wire_id);
-			Vector2 outputPos = component->getOutputPosition(output_index);
-			auto node = wire.findNodeAt(outputPos);
-			wire.removeNodes({ node });
-		}
+	for (const auto& attachment : attachments) {
+		int wireID = attachment.first;
+		if (!wireExists(wireID)) continue;
 
-		output_index++;
+		auto& wire = getWire(wireID);
+		int nodeID = wire.findNodeAt(attachment.second);
+		if (nodeID == -1) continue;
+
+		auto removedPinNodes = wire.removeNodes({ nodeID });
+		disconnectRemovedPins(wireID, removedPinNodes);
+
+		if (wire.Nodes.empty())
+			removeWire(wireID);
 	}
 
 	int lastIndex = (int)m_components.size() - 1;
@@ -157,11 +163,6 @@ void Circuit::removeWire(int id)
 		m_wire_ids.releaseId(id);
 	}
 }
-
-//void Circuit::restoreDeleted(std::vector<int> componentIDs, std::vector<Wire> wires)
-//{
-//
-//}
 
 // Clear this wire's id from the input/output slots of every component that a
 // removed PIN node referenced.
@@ -238,28 +239,15 @@ void Circuit::selectInArea(Rectangle selectionRect, std::vector<int>& selectedCo
 
 }
 
-void Circuit::restoreComponent(int id, componentInfo nodeInfo)
+void Circuit::restoreComponent(componentInfo nodeInfo)
 {
-	// TODO: Restore wires as well when restoring a component
-	/*
-	if (nodeInfo.type < 0 || nodeInfo.type >= NodeInfo::COMPONENT_COUNT) return;
-
-	m_components.push_back(GateFactories[nodeInfo.type](id, nodeInfo.position));
-	m_component_ids.reuseId(id, m_components.size() - 1);
-	auto& new_component = m_components.back();
-
-	for (int i = 0; i < nodeInfo.input_components.size(); ++i) {
-		if (nodeInfo.input_components[i] == -1) {
-			new_component->m_inputWireIds[i] = -1;
-			continue;
-		}
-
-		int wireId = addWire({ nodeInfo.input_components[i], 0 }, { id, i });
-	}
-	*/
+	if (nodeInfo.type < 0 || nodeInfo.type >= componentInfo::COMPONENT_COUNT) return;
+	std::unique_ptr<Gate> new_component = std::move(GateFactories[nodeInfo.type](nodeInfo.id, nodeInfo.position));
+	new_component->m_inputWireIds = nodeInfo.input_components;
+	new_component->m_outputWireIds = nodeInfo.output_components;
+	new_component->m_outputValues = nodeInfo.output_value;
+	m_components.push_back(std::move(new_component));
 }
-
-
 
 int Circuit::extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos, Wire::Elbow first)
 {

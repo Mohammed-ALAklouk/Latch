@@ -19,6 +19,8 @@ App::App()
     camera = { 0 };
     camera.offset = Vector2{ window_width / 2.0f, window_height / 2.0f };
     camera.zoom = 1;
+
+	action_manager.AddSnapshot(circuit.GetSnapshot("Initial state"));
 }
 
 App::~App()
@@ -52,7 +54,7 @@ void App::HandleInput()
 		world_mouse_pos.y = int(world_mouse_pos.y / cell_size) * cell_size;
 		int new_id = circuit.addComponent(selected_component_type, world_mouse_pos);
 		auto& component = circuit.getComponent(new_id);
-        action_manager.addAction<ComponentPlacedAction>(new_id, component->getComponentInfo());
+        action_manager.AddSnapshot(circuit.GetSnapshot("Added component"));
         gate_placed = true;
     }
 
@@ -63,8 +65,6 @@ void App::HandleInput()
 		circuit.evaluate();
 
     if (IsKeyPressed(KEY_DELETE)) {
-        action_manager.addAction<ComponentsDeletedAction>(getNodeInfoDeletion(selected_component_ids), selected_component_ids);
-		
         for (int id : selected_component_ids) {
             circuit.removeComponent(id);
         }
@@ -82,6 +82,7 @@ void App::HandleInput()
 		}
 
 		clearSelection();
+        action_manager.AddSnapshot(circuit.GetSnapshot("Deleted components and wires"));
     }
 
     if (IsKeyDown(KEY_LEFT_CONTROL))
@@ -119,14 +120,17 @@ void App::HandleInput()
 			Vector2 displacement = { mouse_pos.x - copy_center.x, mouse_pos.y - copy_center.y };
 
 			circuit.paste(copy_of_wires, copy_of_components, displacement);
+			action_manager.AddSnapshot(circuit.GetSnapshot("Pasted components and wires"));
 		}
 
         if (IsKeyPressed(KEY_Z)) {
 			action_manager.undo(circuit);
+            clearSelection();
         }
 
         if (IsKeyPressed(KEY_Y)) {
 			action_manager.redo(circuit);
+            clearSelection();
         }
     }
 }
@@ -229,6 +233,16 @@ void App::UI()
     
     ImGui::End();
 
+	ImGui::Begin("Snapshots");
+	int index = 0;
+    for (const auto& snapshot : action_manager.getSnapshots()) {
+        if (index == action_manager.getCurrentIndex())
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Snapshot %d: %s", index, snapshot.note.c_str());
+		else
+            ImGui::Text("%s", snapshot.note.c_str());
+		index++;
+    }
+    ImGui::End();
     rlImGuiEnd();
 }
 
@@ -632,7 +646,7 @@ void App::UpdateDraggingState(const Vector2& world_mouse_pos)
 			}
 		}
 
-        action_manager.addAction<ComponentsMovedAction>(selected_component_ids, dragging_context.snapped_delta);
+        action_manager.AddSnapshot(circuit.GetSnapshot("Moved components"));
 		current_mouse_state = MouseState::Idle;
         dragging_context = { {0, 0}, {0, 0} };
         
@@ -723,12 +737,14 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
                     int nodeID = wire.findNodeAt(world_mouse_pos);
                     if (nodeID != -1) {
                         circuit.extendWireTo(wire.ID, nodeID, input_pin, input_pos, flipped);
+                        action_manager.AddSnapshot(circuit.GetSnapshot("Extended wire to node"));
                         break;
                     }
 
                     WireSegment segment = wire.findSegmentAt(world_mouse_pos);
                     if (segment.first != -1) {
                         circuit.extendWireTo(wire.ID, segment, destination_pos, input_pin, input_pos, flipped);
+						action_manager.AddSnapshot(circuit.GetSnapshot("Extended wire to segment"));
                         break;
                     }
                 }
@@ -744,12 +760,9 @@ void App::UpdateConnectingState(const Vector2& world_mouse_pos)
                     connecting_context.targetPin,
                     destination_pos,
                     connecting_context.elbow);
+				action_manager.AddSnapshot(circuit.GetSnapshot("Added wire"));
             }
         }
-
-        
-		// TODO: Store more info in the action to avoid having to search for the wire later
-        //action_manager.addAction<WirePlacedAction>(id, PinRef{ connecting_context.sourceComponentID, 0 }, connecting_context.targetPin);
 
         connecting_context = { ConnectingContext::PIN, -1, -1, {0, 0}, {-1, -1}, -1, {-1, -1} };
         current_mouse_state = MouseState::Idle;

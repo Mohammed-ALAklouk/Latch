@@ -3,6 +3,7 @@
 #include <memory>
 #include <unordered_map>
 #include <cassert>
+#include <string>
 #include "Gate.h"
 #include "Wire.h"
 #include "IdManager.h"
@@ -10,9 +11,17 @@
 
 
 
+
 class Circuit
 {
 public:
+	struct CircuitSnapshot {
+		std::vector<componentInfo> components;
+		std::vector<Wire> wires;
+		IdManager component_ids;
+		IdManager wire_ids;
+		std::string note;
+	};
 
 	void evaluate();
 	std::vector<LogicLevel> getComponentInputValues(std::unique_ptr<Gate>& component);
@@ -29,7 +38,7 @@ public:
 	void removeWireSegments(int wireID, const std::vector<WireSegment>& segments);
 	void selectInArea(Rectangle selectionRect, std::vector<int>& selectedComponentIDs, 
 		std::unordered_map<int, std::vector<int>>& selectedWireNodes, std::unordered_map<int, std::vector<WireSegment>>& selectedWireSegments) const;
-	void restoreComponent(int id, componentInfo nodeInfo);
+	void restoreComponent(componentInfo nodeInfo);
 	int extendWireTo(int wireID, int sourceNodeID, PinRef targetPin, Vector2 targetPos, Wire::Elbow first = Wire::Elbow::HorizontalFirst);
 	int extendWireTo(int wireID, WireSegment segment, Vector2 source, PinRef targetPin, Vector2 dest, Wire::Elbow first = Wire::Elbow::HorizontalFirst);
 	
@@ -58,11 +67,31 @@ public:
 		return m_wires[index];
 	}
 
-	void restoreDeleted(std::vector<componentInfo> componentIDs, std::vector<Wire> wires);
-	
 	void disconnectRemovedPins(int wireID, const std::vector<WireNode>& removedPinNodes);
 	
+	const CircuitSnapshot GetSnapshot(std::string note = "") const {
+		CircuitSnapshot snapshot;
+		snapshot.components.reserve(m_components.size());
+		for (const auto& component : m_components) {
+			snapshot.components.push_back(component->getComponentInfo());
+		}
+		snapshot.note = note;
+		snapshot.wires = m_wires;
+		snapshot.component_ids = m_component_ids;
+		snapshot.wire_ids = m_wire_ids;
+		return snapshot;
+	}
 
+	void RestoreSnapshot(const CircuitSnapshot& snapshot) {
+		m_wires = snapshot.wires;
+		m_wire_ids = snapshot.wire_ids;
+		m_component_ids = snapshot.component_ids;
+		
+		m_components.clear();
+		for (const auto& componentInfo : snapshot.components) {
+			restoreComponent(componentInfo);
+		}
+	}
 
 	std::vector<std::unique_ptr<Gate>> m_components;
 	std::vector<Wire> m_wires;

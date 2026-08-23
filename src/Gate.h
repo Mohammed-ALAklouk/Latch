@@ -29,7 +29,7 @@ public:
 	}
 
 	componentInfo getComponentInfo() const {
-		return { getNodeInfoType(), m_id, { m_rect.x, m_rect.y }, m_inputWireIds, m_outputWireIds };
+		return { getNodeInfoType(), m_id, { m_rect.x, m_rect.y }, m_inputWireIds, m_outputWireIds, m_outputValues };
 	}
 
 	virtual int inputPinsContainPoint(Vector2 point) const;

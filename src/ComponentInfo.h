@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "raylib.h"
+#include "Pin.h"
 
 struct componentInfo {
 	enum Type
@@ -23,4 +24,5 @@ struct componentInfo {
 	Vector2 position;
 	std::vector<int> input_components;
 	std::vector<int> output_components;
+	std::vector<LogicLevel> output_value;
 };
