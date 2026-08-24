@@ -1,4 +1,4 @@
-# Gate Simulator
+# Latch
 
 A desktop logic-gate sandbox for building and simulating digital circuits on an
 infinite grid. Place gates, wire them together with orthogonal (right-angle)
@@ -75,7 +75,7 @@ is bundled in the repo.
 
    (This runs `premake5 vs2022`.)
 
-2. Open `GateSimulator.sln` in Visual Studio 2022 and build (Debug or Release,
+2. Open `Latch.sln` in Visual Studio 2022 and build (Debug or Release,
    x64).
 
 3. The executable is written to `bin/<Config>/`. `raylib.dll` from

@@ -5,7 +5,7 @@ App::App()
     SetTraceLogLevel(LOG_ERROR);
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     SetConfigFlags(FLAG_WINDOW_HIDDEN | FLAG_WINDOW_RESIZABLE);
-    InitWindow(window_width, window_height, "GateSimulator");
+    InitWindow(window_width, window_height, "Latch");
     MaximizeWindow();
     ClearWindowState(FLAG_WINDOW_HIDDEN);
     

@@ -1,9 +1,9 @@
-workspace "GateSimulator"
+workspace "Latch"
     architecture "x64"
     configurations { "Debug", "Release" }
-    startproject "GateSimulator"
+    startproject "Latch"
 
-project "GateSimulator"
+project "Latch"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
