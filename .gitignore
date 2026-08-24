@@ -59,3 +59,8 @@ Thumbs.db
 
 # Whitelist Premake executable
 !premake5.exe
+
+.CLAUDE
+
+ROADME.md
+/ROADMAP.md
