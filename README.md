@@ -112,3 +112,9 @@ The `App` runs a mouse-state machine (`Idle`, `Panning`, `Dragging`,
 and evaluates the network on each tick using per-gate three-valued lookup
 tables. Editing operations capture a `CircuitSnapshot` into the `ActionManager`,
 which powers undo/redo and the Snapshots panel.
+
+## License
+
+Latch is released under the [MIT License](LICENSE). It bundles third-party
+dependencies under their own terms: [raylib](https://www.raylib.com/) (zlib/libpng)
+and [Dear ImGui](https://github.com/ocornut/imgui) (MIT).
