@@ -51,3 +51,10 @@ add_subdirectory(src)
 
 # Make Latch (not the ALL_BUILD utility project) the default VS startup project.
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Latch)
+
+option(LATCH_BUILD_TESTS "Build the Latch test suite" ${PROJECT_IS_TOP_LEVEL})
+if(LATCH_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
