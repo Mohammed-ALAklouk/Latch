@@ -4,22 +4,6 @@ project(Latch LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(Latch
-    src/Action.h
-    src/App.cpp
-    src/App.h
-    src/Circuit.cpp
-    src/Circuit.h
-    src/ComponentInfo.h
-    src/Gate.cpp
-    src/Gate.h
-    src/IdManager.h
-    src/main.cpp
-    src/Pin.h
-    src/Wire.cpp
-    src/Wire.h
-)
-
 include(FetchContent)
 
 # raylib ships its own CMake build, so MakeAvailable gives us the target.
@@ -63,7 +47,7 @@ add_library(rlImGui STATIC
 target_include_directories(rlImGui PUBLIC ${rlimgui_SOURCE_DIR})
 target_link_libraries(rlImGui PUBLIC imgui raylib)
 
-target_link_libraries(Latch PRIVATE raylib imgui rlImGui)
+add_subdirectory(src)
 
 # Make Latch (not the ALL_BUILD utility project) the default VS startup project.
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Latch)
