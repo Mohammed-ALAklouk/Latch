@@ -3,7 +3,7 @@
 A desktop logic-gate sandbox for building and simulating digital circuits on an
 infinite grid. Place gates, wire them together with orthogonal (right-angle)
 routing, drive them with toggle switches, and watch signals propagate in real
-time. Built in C++17 with [raylib](https://www.raylib.com/) for rendering and
+time. Built in C++20 with [raylib](https://www.raylib.com/) for rendering and
 [Dear ImGui](https://github.com/ocornut/imgui) for the UI panels.
 
 ## Features
@@ -63,31 +63,66 @@ Pick which component right-click places from the **Components** panel.
 
 ## Building
 
-The project targets **Windows** with **Visual Studio 2022** and uses
-[premake5](https://premake.github.io/) to generate the solution. `premake5.exe`
-is bundled in the repo.
+The project builds with **CMake** (3.21+) and is cross-platform. All
+dependencies are fetched automatically at configure time (see
+[Dependencies](#dependencies)), so you only need **CMake**, a **C++20 compiler**,
+and **Git** installed. Any CMake-supported toolchain works — MSVC / Visual
+Studio 2022, GCC, or Clang.
 
-1. Generate the Visual Studio solution:
+### Using CMake presets (recommended)
 
-   ```bash
-   make.bat
-   ```
+The repo ships a `CMakePresets.json` with ready-made configurations. Configure,
+then build:
 
-   (This runs `premake5 vs2022`.)
+```bash
+cmake --preset vs
+cmake --build --preset vs
+```
 
-2. Open `Latch.sln` in Visual Studio 2022 and build (Debug or Release,
-   x64).
+Available presets:
 
-3. The executable is written to `bin/<Config>/`. `raylib.dll` from
-   `vendor/Raylib/lib` must sit next to it at runtime.
+- **`vs`** — Visual Studio 2022 generator, x64 (Windows); builds into `build/vs/`.
+- **`ninja`** — single-config Ninja Debug build (cross-platform; works with GCC,
+  Clang, or MSVC); builds into `build/ninja/`.
+
+You can also open the project folder directly in Visual Studio 2022 — it reads
+`CMakePresets.json` and exposes the presets in the configuration dropdown.
+
+### Without presets
+
+```bash
+cmake -S . -B build
+cmake --build build --config Debug
+```
+
+The `Latch` executable is written under the build tree — for the `vs` preset,
+`build/vs/src/Debug/Latch.exe`. The required libraries are linked statically, so
+there is no DLL to copy alongside it.
+
+### Tests
+
+Tests use [Catch2](https://github.com/catchorg/Catch2) and build by default when
+Latch is the top-level project. Build and run them with CTest:
+
+```bash
+cmake --build --preset vs
+ctest --preset vs
+```
+
+Pass `-DLATCH_BUILD_TESTS=OFF` at configure time to skip building them entirely
+(also skips fetching Catch2).
 
 
 ## Dependencies
 
-Both dependencies are vendored under `vendor/`, so no separate install is needed:
+All dependencies are fetched automatically by CMake via `FetchContent` at
+configure time (which is why Git is required to build) — no manual install or
+vendoring needed:
 
-- **raylib** — windowing, input, and 2D rendering (`vendor/Raylib`).
-- **Dear ImGui** + **rlImGui** — immediate-mode UI panels (`vendor/ImGui`).
+- **raylib** `6.0` — windowing, input, and 2D rendering.
+- **Dear ImGui** `v1.92.1` + **rlImGui** — immediate-mode UI panels and the
+  raylib backend that draws them.
+- **Catch2** `v3.7.1` — unit-test framework (only when tests are enabled).
 
 ## Project layout
 
@@ -102,8 +137,15 @@ src/
   Pin.h             Logic levels and pin references
   Action.h          Undo/redo snapshot manager
   IdManager.h       Stable id ↔ index mapping
-vendor/             raylib and Dear ImGui
+  CMakeLists.txt    latch_core library + Latch executable targets
+tests/              Catch2 unit tests
+CMakeLists.txt      Top-level build: dependency fetching, options
+CMakePresets.json   Configure/build/test presets
 ```
+
+The core simulation logic (`Circuit`, `Gate`, `Wire`, and their headers) is
+compiled into a `latch_core` static library, which both the `Latch` executable
+and the test suite link against.
 
 ## How it works
 
