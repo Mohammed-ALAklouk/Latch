@@ -23,13 +23,6 @@ Release/
 *.vcxproj.filters
 *.vcxproj.user
 
-!vendor/Raylib/lib/
-!vendor/Raylib/lib/*.lib
-!vendor/Raylib/lib/*.dll
-!vendor/Raylib/lib/raylib.lib
-!vendor/Raylib/lib/raylibdll.lib
-!vendor/Raylib/lib/raylib.dll
-
 # Build outputs
 *.exe
 *.obj
@@ -56,9 +49,6 @@ imgui.ini
 *.bak
 Thumbs.db
 .DS_Store
-
-# Whitelist Premake executable
-!premake5.exe
 
 .CLAUDE
 /ROADMAP.md
