@@ -102,12 +102,27 @@ there is no DLL to copy alongside it.
 ### Tests
 
 Tests use [Catch2](https://github.com/catchorg/Catch2) and build by default when
-Latch is the top-level project. Build and run them with CTest:
+Latch is the top-level project. Build the suite, then run it with CTest — each
+`TEST_CASE` is registered as an individual CTest test:
 
 ```bash
 cmake --build --preset vs
-ctest --preset vs
+ctest --preset vs --output-on-failure
 ```
+
+Use the matching `ninja` preset (`ctest --preset ninja --output-on-failure`) for
+Ninja builds. To run the test binary directly — handy for
+[Catch2 filters and tags](https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md),
+e.g. only the gate tests:
+
+```bash
+./build/vs/tests/Debug/latch_tests.exe "[gate]"
+```
+
+The tests exercise `latch_core` headlessly (no window is opened) and cover the
+gate truth tables, circuit evaluation and signal propagation, wire routing
+geometry, and the id/index bookkeeping. They assert steady-state behavior rather
+than per-tick timing, so they remain valid if the evaluation engine changes.
 
 Pass `-DLATCH_BUILD_TESTS=OFF` at configure time to skip building them entirely
 (also skips fetching Catch2).
