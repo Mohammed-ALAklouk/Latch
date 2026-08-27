@@ -16,9 +16,9 @@ private:
 	void HandleInput();
 	void Update(float deltaTime);
 	void UI();
-	void Draw() ;
+	void Draw();
 
-	void GetInputs(MouseInputs& mouse_inputs, KeyboardInputs& keyboard_inputs);
+	void GetMouseInputs(MouseInputs& mouse_inputs);
 
 	int window_width = 800;
 	int window_height = 450;

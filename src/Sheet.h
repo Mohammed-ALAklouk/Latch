@@ -23,17 +23,6 @@ struct MouseInputs {
 	float mouseWheelDelta		= 0.0f;
 };
 
-struct KeyboardInputs {
-	bool shiftDown = false;
-	bool ctrlDown = false;
-	bool CPressed = false;
-	bool VPressed = false;
-	bool ZPressed = false;
-	bool YPressed = false;
-	bool deletePressed = false;
-	bool spacePressed = false;
-};
-
 struct PanningContext {
 	Vector2 initial_pos;
 	Vector2 initial_camera_target;
@@ -78,8 +67,15 @@ public:
 	void UI();
 	void Draw();
 
+	void DeleteSelected();
+	void CopySelected();
+	void Paste();
+	void Undo();
+	void Redo();
+	void StepSimulation();
+
 	void SetViewport(Rectangle viewport);
-	void SetInputs(MouseInputs input, KeyboardInputs keyboard_input) { mouse_inputs = input; keyboard_inputs = keyboard_input; }
+	void SetInputs(MouseInputs input, bool shift_down) { mouse_inputs = input; this->shift_down = shift_down; }
 	Rectangle GetViewport() const { return viewport; }
 	const Camera2D& GetCamera() const { return camera; }
 	Circuit& GetCircuit() { return circuit; }
@@ -163,5 +159,5 @@ private:
 	};
 
 	MouseInputs mouse_inputs;
-	KeyboardInputs keyboard_inputs;
+	bool shift_down = false;
 };

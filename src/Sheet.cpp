@@ -43,79 +43,6 @@ void Sheet::HandleInput()
 
     if (!mouse_inputs.rightButtonDown)
         gate_placed = false;
-
-    if (keyboard_inputs.spacePressed)
-        circuit.evaluate();
-
-    if (keyboard_inputs.deletePressed) {
-        for (int id : selected_component_ids) {
-            circuit.removeComponent(id);
-        }
-
-        for (auto& pair : selected_wire_nodes) {
-            int wireID = pair.first;
-            if (circuit.wireExists(wireID))
-                circuit.removeWireNodes(wireID, pair.second);
-        }
-
-        for (auto& pair : selected_wire_segments) {
-            int wireID = pair.first;
-            if (circuit.wireExists(wireID))
-                circuit.removeWireSegments(wireID, pair.second);
-        }
-
-        clearSelection();
-        action_manager.AddSnapshot(circuit.GetSnapshot("Deleted components and wires"));
-    }
-
-    if (keyboard_inputs.ctrlDown)
-    {
-        if (keyboard_inputs.CPressed) {
-            Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
-            Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
-
-            copy_of_components = getNodeInfoCopy(selected_component_ids);
-            copy_of_wires.clear();
-            for (const auto& pair : selected_wire_nodes) {
-                auto& wire = circuit.getWire(pair.first);
-                copy_of_wires.push_back(wire);
-
-                for (const auto& nodeID : pair.second) {
-                    Vector2 nodePos = wire.getNodePosition(nodeID);
-                    if (nodePos.x < min.x) min.x = nodePos.x;
-                    if (nodePos.y < min.y) min.y = nodePos.y;
-                    if (nodePos.x > max.x) max.x = nodePos.x;
-                    if (nodePos.y > max.y) max.y = nodePos.y;
-                }
-            }
-
-            for (const auto& component : copy_of_components) {
-                if (component.position.x < min.x) min.x = component.position.x;
-                if (component.position.y < min.y) min.y = component.position.y;
-                if (component.position.x > max.x) max.x = component.position.x;
-                if (component.position.y > max.y) max.y = component.position.y;
-            }
-
-            copy_center = { (min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f };
-        }
-        if (keyboard_inputs.VPressed) {
-			Vector2 mouse_pos = mouse_inputs.mousePositionWorld;
-            Vector2 displacement = { mouse_pos.x - copy_center.x, mouse_pos.y - copy_center.y };
-
-            circuit.paste(copy_of_wires, copy_of_components, displacement);
-            action_manager.AddSnapshot(circuit.GetSnapshot("Pasted components and wires"));
-        }
-
-        if (keyboard_inputs.ZPressed) {
-            action_manager.undo(circuit);
-            clearSelection();
-        }
-
-        if (keyboard_inputs.YPressed) {
-            action_manager.redo(circuit);
-            clearSelection();
-        }
-    }
 }
 
 void Sheet::Update(float deltaTime)
@@ -129,11 +56,9 @@ void Sheet::Update(float deltaTime)
     if (is_simulation_running)
     {
         time_since_last_tick += deltaTime;
-        if (time_since_last_tick >= 1.0f / ticks_per_second)
-        {
-            circuit.evaluate();
+        if (time_since_last_tick >= 1.0f / ticks_per_second) {
             time_since_last_tick -= 1.0f / ticks_per_second;
-            number_of_ticks++;
+		    StepSimulation();
         }
     }
 }
@@ -163,11 +88,8 @@ void Sheet::UI()
     ImGui::End();
 
     ImGui::Begin("Simulation");
-    if (ImGui::Button("Step"))
-    {
-        circuit.evaluate();
-        number_of_ticks++;
-    }
+    if (ImGui::Button("Step")) 
+		StepSimulation();
 
     if (ImGui::Button(is_simulation_running ? "Stop" : "Run"))
         is_simulation_running = !is_simulation_running;
@@ -364,6 +286,85 @@ void Sheet::Draw()
     EndScissorMode();
 }
 
+void Sheet::DeleteSelected()
+{
+    for (int id : selected_component_ids) {
+        circuit.removeComponent(id);
+    }
+
+    for (auto& pair : selected_wire_nodes) {
+        int wireID = pair.first;
+        if (circuit.wireExists(wireID))
+            circuit.removeWireNodes(wireID, pair.second);
+    }
+
+    for (auto& pair : selected_wire_segments) {
+        int wireID = pair.first;
+        if (circuit.wireExists(wireID))
+            circuit.removeWireSegments(wireID, pair.second);
+    }
+
+    clearSelection();
+    action_manager.AddSnapshot(circuit.GetSnapshot("Deleted components and wires"));
+}
+
+void Sheet::CopySelected()
+{
+    Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+    Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
+
+    copy_of_components = getNodeInfoCopy(selected_component_ids);
+    copy_of_wires.clear();
+    for (const auto& pair : selected_wire_nodes) {
+        auto& wire = circuit.getWire(pair.first);
+        copy_of_wires.push_back(wire);
+
+        for (const auto& nodeID : pair.second) {
+            Vector2 nodePos = wire.getNodePosition(nodeID);
+            if (nodePos.x < min.x) min.x = nodePos.x;
+            if (nodePos.y < min.y) min.y = nodePos.y;
+            if (nodePos.x > max.x) max.x = nodePos.x;
+            if (nodePos.y > max.y) max.y = nodePos.y;
+        }
+    }
+
+    for (const auto& component : copy_of_components) {
+        if (component.position.x < min.x) min.x = component.position.x;
+        if (component.position.y < min.y) min.y = component.position.y;
+        if (component.position.x > max.x) max.x = component.position.x;
+        if (component.position.y > max.y) max.y = component.position.y;
+    }
+
+    copy_center = { (min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f };
+}
+
+void Sheet::Paste()
+{
+    Vector2 mouse_pos = mouse_inputs.mousePositionWorld;
+    Vector2 displacement = { mouse_pos.x - copy_center.x, mouse_pos.y - copy_center.y };
+
+    circuit.paste(copy_of_wires, copy_of_components, displacement);
+    action_manager.AddSnapshot(circuit.GetSnapshot("Pasted components and wires"));
+}
+
+void Sheet::Undo()
+{
+    action_manager.undo(circuit);
+    clearSelection();
+}
+
+void Sheet::Redo()
+{
+    action_manager.redo(circuit);
+    clearSelection();
+}
+
+void Sheet::StepSimulation()
+{
+    circuit.evaluate();
+    number_of_ticks++;
+}
+
 void Sheet::DrawGrid() const
 {
     Vector2 min = GetScreenToWorld2D({ 0, 0 }, camera);
@@ -404,7 +405,7 @@ void Sheet::UpdateIdleState()
     bool is_button_down = mouse_inputs.leftButtonDown;
     if (is_button_down)
     {
-        if (keyboard_inputs.shiftDown)
+        if (shift_down)
         {
             selecting_context.selectionStart = mouse_inputs.mousePositionWorld;
             selecting_context.selectionEnd = mouse_inputs.mousePositionWorld;
