@@ -36,7 +36,7 @@ void Sheet::HandleInput()
         auto world_mouse_pos = mouse_inputs.mousePositionWorld;
         world_mouse_pos.x = int(world_mouse_pos.x / cell_size) * cell_size;
         world_mouse_pos.y = int(world_mouse_pos.y / cell_size) * cell_size;
-        int new_id = circuit.addComponent(selected_component_type, world_mouse_pos);
+        int new_id = circuit.addComponent(selected_gate_type, world_mouse_pos);
         auto& component = circuit.getComponent(new_id);
         action_manager.AddSnapshot(circuit.GetSnapshot("Added component"));
         gate_placed = true;
@@ -66,28 +66,6 @@ void Sheet::Update(float deltaTime)
 
 void Sheet::UI()
 {
-    ImGui::Begin("Components");
-
-    if (ImGui::Button("AND"))
-        selected_component_type = componentInfo::Type::AND;
-    if (ImGui::Button("NAND"))
-        selected_component_type = componentInfo::Type::NAND;
-    if (ImGui::Button("OR"))
-        selected_component_type = componentInfo::Type::OR;
-    if (ImGui::Button("NOR"))
-        selected_component_type = componentInfo::Type::NOR;
-    if (ImGui::Button("XOR"))
-        selected_component_type = componentInfo::Type::XOR;
-    if (ImGui::Button("XNOR"))
-        selected_component_type = componentInfo::Type::XNOR;
-    if (ImGui::Button("NOT"))
-        selected_component_type = componentInfo::Type::NOT;
-    if (ImGui::Button("LED"))
-        selected_component_type = componentInfo::Type::LED;
-    if (ImGui::Button("TOGGLE"))
-        selected_component_type = componentInfo::Type::TOGGLE;
-    ImGui::End();
-
     ImGui::Begin("Simulation");
     if (ImGui::Button("Step")) 
 		StepSimulation();

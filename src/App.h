@@ -31,7 +31,9 @@ private:
 	int current_sheet_index = 0;
 	Clipboard clipboard;
 
-	char new_sheet_title[64] = "";   
+	char new_sheet_title[64] = ""; 
+
+	componentInfo::Type selected_gate_type = componentInfo::Type::AND;
 
 	UITheme darkTheme = {
 	{ 18, 18, 18, 255 },

@@ -43,7 +43,7 @@ void App::HandleInput()
 	Sheet& sheet = GetCurrentSheet();
 	MouseInputs mouse_inputs;
 	GetMouseInputs(mouse_inputs);
-	sheet.SetInputs(mouse_inputs, IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
+	sheet.SetInputs(mouse_inputs, IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT), selected_gate_type);
 	sheet.HandleInput();
 
     if (ImGui::GetIO().WantCaptureKeyboard)
@@ -73,6 +73,28 @@ void App::Update(float deltaTime)
 void App::UI() 
 {
     rlImGuiBegin();
+
+    ImGui::Begin("Components");
+
+    if (ImGui::Button("AND"))
+        selected_gate_type = componentInfo::Type::AND;
+    if (ImGui::Button("NAND"))
+        selected_gate_type = componentInfo::Type::NAND;
+    if (ImGui::Button("OR"))
+        selected_gate_type = componentInfo::Type::OR;
+    if (ImGui::Button("NOR"))
+        selected_gate_type = componentInfo::Type::NOR;
+    if (ImGui::Button("XOR"))
+        selected_gate_type = componentInfo::Type::XOR;
+    if (ImGui::Button("XNOR"))
+        selected_gate_type = componentInfo::Type::XNOR;
+    if (ImGui::Button("NOT"))
+        selected_gate_type = componentInfo::Type::NOT;
+    if (ImGui::Button("LED"))
+        selected_gate_type = componentInfo::Type::LED;
+    if (ImGui::Button("TOGGLE"))
+        selected_gate_type = componentInfo::Type::TOGGLE;
+    ImGui::End();
 
     ImGui::Begin("Sheets");
 	int index = 0;

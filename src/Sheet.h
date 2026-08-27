@@ -80,8 +80,13 @@ public:
 	void Redo();
 	void StepSimulation();
 
+	void SetInputs(MouseInputs input, bool shift_down, componentInfo::Type selected_gate_type) {
+		mouse_inputs = input;
+		this->shift_down = shift_down;
+		this->selected_gate_type = selected_gate_type;
+	}
+
 	void SetViewport(Rectangle viewport);
-	void SetInputs(MouseInputs input, bool shift_down) { mouse_inputs = input; this->shift_down = shift_down; }
 	void SetTitle(const std::string& title) { this->title = title; }
 	std::string GetTitle() const { return title; }
 	Rectangle GetViewport() const { return viewport; }
@@ -125,7 +130,6 @@ private:
 
 
 	MouseState current_mouse_state = MouseState::Idle;
-	componentInfo::Type selected_component_type = componentInfo::Type::AND;
 
 	PanningContext panning_context;
 	DraggingContext dragging_context;
@@ -163,6 +167,7 @@ private:
 
 	MouseInputs mouse_inputs;
 	bool shift_down = false;
+	componentInfo::Type selected_gate_type = componentInfo::Type::AND;
 
 	std::string title;
 };
