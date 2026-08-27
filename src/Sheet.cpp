@@ -31,7 +31,10 @@ void Sheet::HandleInput()
         camera.zoom = current_zoom;
     }
 
-    if (mouse_inputs.rightButtonDown && !gate_placed)
+    is_mouse_over_viewport = CheckCollisionPointRec(mouse_inputs.mousePositionScreen, viewport);
+
+
+    if (mouse_inputs.rightButtonDown && !gate_placed && is_mouse_over_viewport)
     {
         auto world_mouse_pos = mouse_inputs.mousePositionWorld;
         world_mouse_pos.x = int(world_mouse_pos.x / cell_size) * cell_size;
@@ -380,6 +383,11 @@ void Sheet::DrawGrid() const
 
 void Sheet::UpdateIdleState()
 {
+    if (!is_mouse_over_viewport) {
+        hovered_component_id = -1;
+        return;
+	}
+
     bool is_button_down = mouse_inputs.leftButtonDown;
     if (is_button_down)
     {

@@ -46,7 +46,7 @@ void App::HandleInput()
 	sheet.SetInputs(mouse_inputs, IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT), selected_gate_type);
 	sheet.HandleInput();
 
-    if (ImGui::GetIO().WantCaptureKeyboard)
+    if (ImGui::GetIO().WantCaptureKeyboard || !CheckCollisionPointRec(mouse_inputs.mousePositionScreen, sheet.GetViewport()))
         return;
 
     if (IsKeyPressed(KEY_SPACE))

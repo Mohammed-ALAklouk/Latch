@@ -167,6 +167,7 @@ private:
 
 	MouseInputs mouse_inputs;
 	bool shift_down = false;
+	bool is_mouse_over_viewport = false;
 	componentInfo::Type selected_gate_type = componentInfo::Type::AND;
 
 	std::string title;
