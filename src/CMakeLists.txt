@@ -13,5 +13,5 @@ target_include_directories(latch_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(latch_core PUBLIC raylib)
 
 
-add_executable(Latch main.cpp App.cpp App.h)
+add_executable(Latch main.cpp App.cpp App.h sheet.cpp sheet.h)
 target_link_libraries(Latch PRIVATE latch_core imgui rlImGui)
