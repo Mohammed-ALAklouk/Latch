@@ -33,7 +33,19 @@ void App::HandleInput()
         GetScreenToWorld2D(GetMousePosition(), sheet.GetCamera()),
         GetMouseWheelMove()
 	};
+
+    KeyboardInputs keyboard_inputs = {
+        IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT),
+		IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL),
+        IsKeyPressed(KEY_C),
+        IsKeyPressed(KEY_V),
+        IsKeyPressed(KEY_Z),
+        IsKeyPressed(KEY_Y),
+        IsKeyPressed(KEY_DELETE),
+        IsKeyPressed(KEY_SPACE),
+	};
 	sheet.SetMouseInputs(mouse_inputs);
+	sheet.SetKeyboardInputs(keyboard_inputs);
 	sheet.HandleInput();
 }
 

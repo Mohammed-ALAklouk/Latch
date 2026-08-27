@@ -23,6 +23,17 @@ struct MouseInputs {
 	float mouseWheelDelta		= 0.0f;
 };
 
+struct KeyboardInputs {
+	bool shiftDown = false;
+	bool ctrlDown = false;
+	bool CDown = false;
+	bool VDown = false;
+	bool ZDown = false;
+	bool YDown = false;
+	bool deleteDown = false;
+	bool spaceDown = false;
+};
+
 struct PanningContext {
 	Vector2 initial_pos;
 	Vector2 initial_camera_target;
@@ -69,6 +80,7 @@ public:
 
 	void SetViewport(Rectangle viewport);
 	void SetMouseInputs(MouseInputs input) { mouse_inputs = input; }
+	void SetKeyboardInputs(KeyboardInputs input) { keyboard_inputs = input; }
 	Rectangle GetViewport() const { return viewport; }
 	const Camera2D& GetCamera() const { return camera; }
 	Circuit& GetCircuit() { return circuit; }
@@ -82,7 +94,6 @@ private:
 	void UpdateConnectingState();
 	void UpdateSelectingState();
 	std::vector<componentInfo > getNodeInfoCopy(std::vector<int>& ids);
-	std::vector<componentInfo > getNodeInfoDeletion(std::vector<int>& ids);
 
 	void clearSelection();
 
@@ -122,7 +133,6 @@ private:
 	Circuit circuit;
 
 	bool gate_placed = false;
-	bool space_was_pressed = false;
 
 	int major_step = 100 / CELL_SIZE;
 	float grid_line_minor_thickness = 0.8f;
@@ -154,4 +164,5 @@ private:
 	};
 
 	MouseInputs mouse_inputs;
+	KeyboardInputs keyboard_inputs;
 };

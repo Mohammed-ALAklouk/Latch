@@ -44,10 +44,10 @@ void Sheet::HandleInput()
     if (!mouse_inputs.rightButtonDown)
         gate_placed = false;
 
-    if (IsKeyPressed(KEY_SPACE))
+    if (keyboard_inputs.spaceDown)
         circuit.evaluate();
 
-    if (IsKeyPressed(KEY_DELETE)) {
+    if (keyboard_inputs.deleteDown) {
         for (int id : selected_component_ids) {
             circuit.removeComponent(id);
         }
@@ -68,9 +68,9 @@ void Sheet::HandleInput()
         action_manager.AddSnapshot(circuit.GetSnapshot("Deleted components and wires"));
     }
 
-    if (IsKeyDown(KEY_LEFT_CONTROL))
+    if (keyboard_inputs.ctrlDown)
     {
-        if (IsKeyPressed(KEY_C)) {
+        if (keyboard_inputs.CDown) {
             Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
             Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
 
@@ -98,7 +98,7 @@ void Sheet::HandleInput()
 
             copy_center = { (min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f };
         }
-        if (IsKeyPressed(KEY_V)) {
+        if (keyboard_inputs.VDown) {
 			Vector2 mouse_pos = mouse_inputs.mousePositionWorld;
             Vector2 displacement = { mouse_pos.x - copy_center.x, mouse_pos.y - copy_center.y };
 
@@ -106,12 +106,12 @@ void Sheet::HandleInput()
             action_manager.AddSnapshot(circuit.GetSnapshot("Pasted components and wires"));
         }
 
-        if (IsKeyPressed(KEY_Z)) {
+        if (keyboard_inputs.ZDown) {
             action_manager.undo(circuit);
             clearSelection();
         }
 
-        if (IsKeyPressed(KEY_Y)) {
+        if (keyboard_inputs.YDown) {
             action_manager.redo(circuit);
             clearSelection();
         }
@@ -122,7 +122,6 @@ void Sheet::Update(float deltaTime)
 {
     if (!ImGui::GetIO().WantCaptureMouse)
     {
-        auto world_mouse_pos = mouse_inputs.mousePositionWorld;
         auto mouse_state_update = mouse_state_update_functions[static_cast<int>(current_mouse_state)];
         (this->*mouse_state_update)();
     }
@@ -405,7 +404,7 @@ void Sheet::UpdateIdleState()
     bool is_button_down = mouse_inputs.leftButtonDown;
     if (is_button_down)
     {
-        if (IsKeyDown(KeyboardKey::KEY_LEFT_SHIFT))
+        if (keyboard_inputs.shiftDown)
         {
             selecting_context.selectionStart = mouse_inputs.mousePositionWorld;
             selecting_context.selectionEnd = mouse_inputs.mousePositionWorld;
@@ -821,16 +820,6 @@ void Sheet::UpdateSelectingState()
 }
 
 std::vector<componentInfo> Sheet::getNodeInfoCopy(std::vector<int>& ids)
-{
-    std::vector<componentInfo> nodes;
-    for (int id : ids) {
-        auto& component = circuit.getComponent(id);
-        nodes.push_back(component->getComponentInfo());
-    }
-    return nodes;
-}
-
-std::vector<componentInfo> Sheet::getNodeInfoDeletion(std::vector<int>& ids)
 {
     std::vector<componentInfo> nodes;
     for (int id : ids) {
