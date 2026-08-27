@@ -1,4 +1,7 @@
 #pragma once
+#include <memory>
+#include <vector>
+
 #include "raylib.h"
 #include "rlImGui.h"
 #include "imgui.h"
@@ -19,12 +22,16 @@ private:
 	void Draw();
 
 	void GetMouseInputs(MouseInputs& mouse_inputs);
+	Sheet& GetCurrentSheet() { return *sheets[current_sheet_index]; }
 
 	int window_width = 800;
 	int window_height = 450;
 
-	Sheet sheet;
+	std::vector<std::unique_ptr<Sheet>> sheets;
+	int current_sheet_index = 0;
 	Clipboard clipboard;
+
+	char new_sheet_title[64] = "";   
 
 	UITheme darkTheme = {
 	{ 18, 18, 18, 255 },

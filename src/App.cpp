@@ -9,7 +9,8 @@ App::App()
     MaximizeWindow();
     ClearWindowState(FLAG_WINDOW_HIDDEN);
 
-	sheet.SetViewport({ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() });
+	sheets.push_back(std::make_unique<Sheet>());
+	GetCurrentSheet().SetViewport({ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() });
     
     SetTargetFPS(60);
     rlImGuiSetup(true);
@@ -26,16 +27,20 @@ void App::GetMouseInputs(MouseInputs& mouse_inputs)
     mouse_inputs.leftButtonDown = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
     mouse_inputs.rightButtonDown = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
     mouse_inputs.mousePositionScreen = GetMousePosition();
-    mouse_inputs.mousePositionWorld = GetScreenToWorld2D(GetMousePosition(), sheet.GetCamera());
+    mouse_inputs.mousePositionWorld = GetScreenToWorld2D(GetMousePosition(), GetCurrentSheet().GetCamera());
     mouse_inputs.mouseWheelDelta = GetMouseWheelMove();
 }
 
 void App::HandleInput()
 {
-    if (IsWindowResized())
-		sheet.SetViewport({ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() });
+    if (IsWindowResized()) {
+        for (auto& sheet : sheets) {
+		    sheet->SetViewport({ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() });
+        }
+    }
 
     
+	Sheet& sheet = GetCurrentSheet();
 	MouseInputs mouse_inputs;
 	GetMouseInputs(mouse_inputs);
 	sheet.SetInputs(mouse_inputs, IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
@@ -62,18 +67,67 @@ void App::HandleInput()
 
 void App::Update(float deltaTime)
 {
-	sheet.Update(deltaTime);
+	GetCurrentSheet().Update(deltaTime);
 }
 
 void App::UI() 
 {
     rlImGuiBegin();
-	sheet.UI();
+
+    ImGui::Begin("Sheets");
+	int index = 0;
+    for (auto sheet = sheets.begin(); sheet != sheets.end();)
+    {
+		bool should_delete = ImGui::Button(("Delete##" + std::to_string(index)).c_str());
+        
+		ImGui::SameLine();
+
+        if (ImGui::Button(((*sheet)->GetTitle() + "##" + std::to_string(index)).c_str()))
+            current_sheet_index = index;
+
+        if (current_sheet_index == index)
+        {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Current");
+		}
+        
+        if (should_delete && sheets.size() > 1)
+        {
+            sheet = sheets.erase(sheet);   
+            if (current_sheet_index > index)          // strictly greater: only shift when above
+                current_sheet_index--;
+            else if (current_sheet_index == index)    // deleted the active sheet
+                current_sheet_index = (index > 0) ? index - 1 : 0;
+
+
+            continue;                      
+        }
+        index++;
+		sheet++;
+    }
+
+	ImGui::InputText("Sheet Title", new_sheet_title, sizeof(new_sheet_title));
+	ImGui::SameLine();
+    if (ImGui::Button("Add Sheet"))
+    {
+        sheets.push_back(std::make_unique<Sheet>());
+		sheets.back()->SetViewport({ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() });
+        sheets.back()->SetTitle(new_sheet_title);
+		if (new_sheet_title[0] == '\0')
+            sheets.back()->SetTitle("Untitled Sheet" + std::to_string(sheets.size()));
+        
+		current_sheet_index = sheets.size() - 1;
+		new_sheet_title[0] = '\0';   // clear the input for the next sheet
+	}
+	ImGui::End();
+
+	GetCurrentSheet().UI();
     rlImGuiEnd();
 }
 
 void App::Draw() 
 { 
+    Sheet& sheet = GetCurrentSheet();
     BeginDrawing();
 
     BeginMode2D(sheet.GetCamera());

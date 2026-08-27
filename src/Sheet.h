@@ -82,10 +82,11 @@ public:
 
 	void SetViewport(Rectangle viewport);
 	void SetInputs(MouseInputs input, bool shift_down) { mouse_inputs = input; this->shift_down = shift_down; }
+	void SetTitle(const std::string& title) { this->title = title; }
+	std::string GetTitle() const { return title; }
 	Rectangle GetViewport() const { return viewport; }
 	const Camera2D& GetCamera() const { return camera; }
 	Circuit& GetCircuit() { return circuit; }
-
 private:
 	void DrawGrid() const;
 
@@ -162,4 +163,6 @@ private:
 
 	MouseInputs mouse_inputs;
 	bool shift_down = false;
+
+	std::string title;
 };

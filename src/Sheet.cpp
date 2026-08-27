@@ -10,6 +10,7 @@ Sheet::Sheet()
     camera.zoom = 1;
 
     action_manager.AddSnapshot(circuit.GetSnapshot("Initial state"));
+    title = "New Sheet";
 }
 
 void Sheet::SetViewport(Rectangle viewport)
