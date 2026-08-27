@@ -8,6 +8,8 @@ App::App()
     InitWindow(window_width, window_height, "Latch");
     MaximizeWindow();
     ClearWindowState(FLAG_WINDOW_HIDDEN);
+
+	sheet.SetViewport({ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() });
     
     SetTargetFPS(60);
     rlImGuiSetup(true);
@@ -22,7 +24,7 @@ App::~App()
 void App::HandleInput()
 {
     if (IsWindowResized())
-		sheet.HandleWindowResize();
+		sheet.SetViewport({ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() });
 
 	sheet.HandleInput();
 }

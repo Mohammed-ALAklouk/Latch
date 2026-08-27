@@ -7,17 +7,16 @@ Sheet::Sheet()
     connecting_context = { ConnectingContext::PIN, -1, -1, {0, 0}, {-1, -1}, -1, {-1, -1} };
 
     camera = { 0 };
-    camera.offset = Vector2{ window_width / 2.0f, window_height / 2.0f };
     camera.zoom = 1;
 
     action_manager.AddSnapshot(circuit.GetSnapshot("Initial state"));
 }
 
-void Sheet::HandleWindowResize()
+void Sheet::SetViewport(Rectangle viewport)
 {
-    window_height = GetScreenHeight();
-    window_width = GetScreenWidth();
-    camera.offset = Vector2{ window_width / 2.0f, window_height / 2.0f };
+    this->viewport = viewport;
+    camera.offset = Vector2{ viewport.x + viewport.width / 2.0f,
+                             viewport.y + viewport.height / 2.0f };
 }
 
 void Sheet::HandleInput()
@@ -230,6 +229,7 @@ void Sheet::UI()
 
 void Sheet::Draw()
 {
+	BeginScissorMode(viewport.x, viewport.y, viewport.width, viewport.height);
     DrawGrid();
 
     // While dragging, hide the nodes the preview is about to redraw at a new
@@ -362,6 +362,7 @@ void Sheet::Draw()
     auto top_left = GetScreenToWorld2D({ 0, 0 }, camera);
     std::string state_text = mouse_state_names[static_cast<int>(current_mouse_state)];
     DrawText(("State: " + state_text).c_str(), top_left.x, top_left.y, 20, RED);
+    EndScissorMode();
 }
 
 void Sheet::DrawGrid() const

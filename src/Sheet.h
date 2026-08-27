@@ -71,11 +71,12 @@ public:
 
 	void clearSelection();
 
-	void HandleWindowResize();
+	void SetViewport(Rectangle viewport);
+	Rectangle GetViewport() const { return viewport; }
+
+	Rectangle viewport;
 
 	int cell_size = CELL_SIZE;
-	int window_width = 800;
-	int window_height = 450;
 
 	enum class MouseState { Idle, Panning, Dragging, Connecting, Selecting };
 
@@ -127,7 +128,6 @@ public:
 	std::vector<componentInfo> copy_of_components;
 	std::vector<Wire> copy_of_wires;
 	Vector2 copy_center = { 0, 0 };
-
 
 	ActionManager action_manager;
 
