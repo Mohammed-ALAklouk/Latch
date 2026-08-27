@@ -24,6 +24,7 @@ private:
 	int window_height = 450;
 
 	Sheet sheet;
+	Clipboard clipboard;
 
 	UITheme darkTheme = {
 	{ 18, 18, 18, 255 },

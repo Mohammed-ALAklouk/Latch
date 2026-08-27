@@ -308,17 +308,16 @@ void Sheet::DeleteSelected()
     action_manager.AddSnapshot(circuit.GetSnapshot("Deleted components and wires"));
 }
 
-void Sheet::CopySelected()
+void Sheet::CopySelected(Clipboard& clipboard)
 {
     Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
     Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
 
-    copy_of_components = getNodeInfoCopy(selected_component_ids);
-    copy_of_wires.clear();
+    clipboard.components = getNodeInfoCopy(selected_component_ids);
+    clipboard.wires.clear();
     for (const auto& pair : selected_wire_nodes) {
         auto& wire = circuit.getWire(pair.first);
-        copy_of_wires.push_back(wire);
-
+        clipboard.wires.push_back(wire);
         for (const auto& nodeID : pair.second) {
             Vector2 nodePos = wire.getNodePosition(nodeID);
             if (nodePos.x < min.x) min.x = nodePos.x;
@@ -328,22 +327,22 @@ void Sheet::CopySelected()
         }
     }
 
-    for (const auto& component : copy_of_components) {
+    for (const auto& component : clipboard.components) {
         if (component.position.x < min.x) min.x = component.position.x;
         if (component.position.y < min.y) min.y = component.position.y;
         if (component.position.x > max.x) max.x = component.position.x;
         if (component.position.y > max.y) max.y = component.position.y;
     }
 
-    copy_center = { (min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f };
+    clipboard.center = { (min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f };
 }
 
-void Sheet::Paste()
+void Sheet::Paste(const Clipboard& clipboard)
 {
     Vector2 mouse_pos = mouse_inputs.mousePositionWorld;
-    Vector2 displacement = { mouse_pos.x - copy_center.x, mouse_pos.y - copy_center.y };
+    Vector2 displacement = { mouse_pos.x - clipboard.center.x, mouse_pos.y - clipboard.center.y };
 
-    circuit.paste(copy_of_wires, copy_of_components, displacement);
+    circuit.paste(clipboard.wires, clipboard.components, displacement);
     action_manager.AddSnapshot(circuit.GetSnapshot("Pasted components and wires"));
 }
 

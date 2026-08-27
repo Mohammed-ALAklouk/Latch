@@ -52,8 +52,8 @@ void App::HandleInput()
 
     if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL))
     {
-        if (IsKeyPressed(KEY_C))        sheet.CopySelected();
-        else if (IsKeyPressed(KEY_V))   sheet.Paste();
+        if (IsKeyPressed(KEY_C))        sheet.CopySelected(clipboard);
+        else if (IsKeyPressed(KEY_V))   sheet.Paste(clipboard);
 
         if (IsKeyPressed(KEY_Z))        sheet.Undo();
         else if (IsKeyPressed(KEY_Y))   sheet.Redo();

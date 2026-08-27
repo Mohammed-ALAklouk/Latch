@@ -23,6 +23,12 @@ struct MouseInputs {
 	float mouseWheelDelta		= 0.0f;
 };
 
+struct Clipboard {
+	std::vector<componentInfo> components;
+	std::vector<Wire> wires;
+	Vector2 center{ 0, 0 };
+};
+
 struct PanningContext {
 	Vector2 initial_pos;
 	Vector2 initial_camera_target;
@@ -68,8 +74,8 @@ public:
 	void Draw();
 
 	void DeleteSelected();
-	void CopySelected();
-	void Paste();
+	void CopySelected(Clipboard& clipboard);
+	void Paste(const Clipboard& clipboard);
 	void Undo();
 	void Redo();
 	void StepSimulation();
@@ -142,10 +148,6 @@ private:
 	float ticks_per_second = 0.5f;
 	float time_since_last_tick = 0.0f;
 	int number_of_ticks = 0;
-
-	std::vector<componentInfo> copy_of_components;
-	std::vector<Wire> copy_of_wires;
-	Vector2 copy_center = { 0, 0 };
 
 	ActionManager action_manager;
 
