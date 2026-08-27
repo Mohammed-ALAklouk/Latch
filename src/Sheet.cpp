@@ -21,7 +21,7 @@ void Sheet::SetViewport(Rectangle viewport)
 
 void Sheet::HandleInput()
 {
-    auto zoom_change = GetMouseWheelMove();
+    auto zoom_change = mouse_inputs.mouseWheelDelta;
     if (zoom_change)
     {
         current_zoom += zoom_change * zoom_sensitivity;
@@ -30,9 +30,9 @@ void Sheet::HandleInput()
         camera.zoom = current_zoom;
     }
 
-    if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_RIGHT) && !gate_placed)
+    if (mouse_inputs.rightButtonDown && !gate_placed)
     {
-        auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+        auto world_mouse_pos = mouse_inputs.mousePositionWorld;
         world_mouse_pos.x = int(world_mouse_pos.x / cell_size) * cell_size;
         world_mouse_pos.y = int(world_mouse_pos.y / cell_size) * cell_size;
         int new_id = circuit.addComponent(selected_component_type, world_mouse_pos);
@@ -41,7 +41,7 @@ void Sheet::HandleInput()
         gate_placed = true;
     }
 
-    if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_RIGHT))
+    if (!mouse_inputs.rightButtonDown)
         gate_placed = false;
 
     if (IsKeyPressed(KEY_SPACE))
@@ -99,7 +99,7 @@ void Sheet::HandleInput()
             copy_center = { (min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f };
         }
         if (IsKeyPressed(KEY_V)) {
-            Vector2 mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+			Vector2 mouse_pos = mouse_inputs.mousePositionWorld;
             Vector2 displacement = { mouse_pos.x - copy_center.x, mouse_pos.y - copy_center.y };
 
             circuit.paste(copy_of_wires, copy_of_components, displacement);
@@ -122,9 +122,9 @@ void Sheet::Update(float deltaTime)
 {
     if (!ImGui::GetIO().WantCaptureMouse)
     {
-        auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+        auto world_mouse_pos = mouse_inputs.mousePositionWorld;
         auto mouse_state_update = mouse_state_update_functions[static_cast<int>(current_mouse_state)];
-        (this->*mouse_state_update)(world_mouse_pos);
+        (this->*mouse_state_update)();
     }
 
     if (is_simulation_running)
@@ -263,7 +263,7 @@ void Sheet::Draw()
     {
         Vector2 start;
         Color line_color;
-        auto world_mouse_pos = GetScreenToWorld2D(GetMousePosition(), camera);
+        auto world_mouse_pos = mouse_inputs.mousePositionWorld;
         Vector2 destination_pos = { round(world_mouse_pos.x / cell_size) * cell_size, round(world_mouse_pos.y / cell_size) * cell_size };
 
         if (connecting_context.type == ConnectingContext::ConnectionType::PIN)
@@ -400,15 +400,15 @@ void Sheet::DrawGrid() const
     }
 }
 
-void Sheet::UpdateIdleState(const Vector2& world_mouse_pos)
+void Sheet::UpdateIdleState()
 {
-    bool is_button_down = IsMouseButtonDown(MouseButton::MOUSE_BUTTON_LEFT);
+    bool is_button_down = mouse_inputs.leftButtonDown;
     if (is_button_down)
     {
         if (IsKeyDown(KeyboardKey::KEY_LEFT_SHIFT))
         {
-            selecting_context.selectionStart = world_mouse_pos;
-            selecting_context.selectionEnd = world_mouse_pos;
+            selecting_context.selectionStart = mouse_inputs.mousePositionWorld;
+            selecting_context.selectionEnd = mouse_inputs.mousePositionWorld;
             current_mouse_state = MouseState::Selecting;
             return;
         }
@@ -420,7 +420,7 @@ void Sheet::UpdateIdleState(const Vector2& world_mouse_pos)
         bool clicked_on_component = false;
 
         for (auto& wire : circuit.m_wires) {
-            int nodeID = wire.findNodeAt(world_mouse_pos);
+            int nodeID = wire.findNodeAt(mouse_inputs.mousePositionWorld);
             if (nodeID != -1) {
                 connecting_context.type = ConnectingContext::JUNCTION;
                 connecting_context.wireID = wire.ID;
@@ -442,12 +442,12 @@ void Sheet::UpdateIdleState(const Vector2& world_mouse_pos)
         if (clicked_on_wire_node) return;
 
         for (auto& wire : circuit.m_wires) {
-            WireSegment segment = wire.findSegmentAt(world_mouse_pos);
+            WireSegment segment = wire.findSegmentAt(mouse_inputs.mousePositionWorld);
             if (segment.first != -1) {
                 connecting_context.sourceSegment = segment;
                 connecting_context.type = ConnectingContext::JUNCTION;
                 connecting_context.wireID = wire.ID;
-                connecting_context.sourcePos = { std::round(world_mouse_pos.x / cell_size) * cell_size, std::round(world_mouse_pos.y / cell_size) * cell_size };
+                connecting_context.sourcePos = { std::round(mouse_inputs.mousePositionWorld.x / cell_size) * cell_size, std::round(mouse_inputs.mousePositionWorld.y / cell_size) * cell_size };
                 current_mouse_state = MouseState::Connecting;
                 clearSelection();
 
@@ -463,7 +463,7 @@ void Sheet::UpdateIdleState(const Vector2& world_mouse_pos)
         if (clicked_on_wire_segment) return;
 
         for (auto& component : circuit.m_components) {
-            if (component->outputPinContainsPoint(world_mouse_pos) != -1)
+            if (component->outputPinContainsPoint(mouse_inputs.mousePositionWorld) != -1)
             {
                 connecting_context.sourceComponentID = component->m_id;
                 connecting_context.targetPin = { 0, 0 };
@@ -479,7 +479,7 @@ void Sheet::UpdateIdleState(const Vector2& world_mouse_pos)
         // a free input pin can start a connection too; the drag runs input -> output
         bool clicked_on_input_pin = false;
         for (auto& component : circuit.m_components) {
-            int input_index = component->inputPinsContainPoint(world_mouse_pos);
+            int input_index = component->inputPinsContainPoint(mouse_inputs.mousePositionWorld);
             if (input_index != -1 && component->getInputWireId(input_index) == -1) {
                 connecting_context.type = ConnectingContext::INPUT;
                 connecting_context.sourceComponentID = component->m_id;
@@ -494,9 +494,9 @@ void Sheet::UpdateIdleState(const Vector2& world_mouse_pos)
         if (clicked_on_input_pin) return;
 
         for (auto& component : circuit.m_components) {
-            if (component->containsPoint(world_mouse_pos)) {
+            if (component->containsPoint(mouse_inputs.mousePositionWorld)) {
                 current_mouse_state = MouseState::Dragging;
-                dragging_context.initial_mouse_pos = world_mouse_pos;
+                dragging_context.initial_mouse_pos = mouse_inputs.mousePositionWorld;
                 component->onClick();
                 clicked_on_component = true;
 
@@ -515,14 +515,14 @@ void Sheet::UpdateIdleState(const Vector2& world_mouse_pos)
 
         clearSelection();
         current_mouse_state = MouseState::Panning;
-        panning_context.initial_pos = GetMousePosition();
+        panning_context.initial_pos = mouse_inputs.mousePositionScreen;
         panning_context.initial_camera_target = camera.target;
     }
     else
     {
         hovered_component_id = -1;
         for (auto& component : circuit.m_components) {
-            if (component->containsPoint(world_mouse_pos)) {
+            if (component->containsPoint(mouse_inputs.mousePositionWorld)) {
                 hovered_component_id = component->m_id;
                 break;
             }
@@ -531,15 +531,15 @@ void Sheet::UpdateIdleState(const Vector2& world_mouse_pos)
 
 }
 
-void Sheet::UpdatePanningState(const Vector2& world_mouse_pos)
+void Sheet::UpdatePanningState()
 {
-    if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
+    if (!mouse_inputs.leftButtonDown) {
         current_mouse_state = MouseState::Idle;
         panning_context = { {0, 0}, {0, 0} };
         return;
     }
 
-    auto screen_mouse_pos = GetMousePosition();
+    auto screen_mouse_pos = mouse_inputs.mousePositionScreen;
 
     Vector2 delta = {
         panning_context.initial_pos.x - screen_mouse_pos.x,
@@ -552,9 +552,9 @@ void Sheet::UpdatePanningState(const Vector2& world_mouse_pos)
     };
 }
 
-void Sheet::UpdateDraggingState(const Vector2& world_mouse_pos)
+void Sheet::UpdateDraggingState()
 {
-    if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
+    if (!mouse_inputs.leftButtonDown) {
         for (auto t : selected_wire_nodes) {
             if (!circuit.wireExists(t.first)) continue;
             circuit.getWire(t.first).moveNodesWithElbow(t.second, dragging_context.snapped_delta, dragging_context.elbow);
@@ -629,8 +629,8 @@ void Sheet::UpdateDraggingState(const Vector2& world_mouse_pos)
     }
 
     Vector2 delta = {
-        int(world_mouse_pos.x - dragging_context.initial_mouse_pos.x) / cell_size * cell_size - dragging_context.snapped_delta.x,
-        int(world_mouse_pos.y - dragging_context.initial_mouse_pos.y) / cell_size * cell_size - dragging_context.snapped_delta.y
+        int(mouse_inputs.mousePositionWorld.x - dragging_context.initial_mouse_pos.x) / cell_size * cell_size - dragging_context.snapped_delta.x,
+        int(mouse_inputs.mousePositionWorld.y - dragging_context.initial_mouse_pos.y) / cell_size * cell_size - dragging_context.snapped_delta.y
     };
 
     dragging_context.snapped_delta.x += delta.x;
@@ -638,8 +638,8 @@ void Sheet::UpdateDraggingState(const Vector2& world_mouse_pos)
 
     // Pick the reroute elbow from how you dragged, mirroring the connecting logic:
     // lock it once you commit to a direction, re-arm when you return near the start.
-    Vector2 fromStart = { world_mouse_pos.x - dragging_context.initial_mouse_pos.x,
-                          world_mouse_pos.y - dragging_context.initial_mouse_pos.y };
+    Vector2 fromStart = { mouse_inputs.mousePositionWorld.x - dragging_context.initial_mouse_pos.x,
+                          mouse_inputs.mousePositionWorld.y - dragging_context.initial_mouse_pos.y };
     float distSq = fromStart.x * fromStart.x + fromStart.y * fromStart.y;
     const float resetDist = (float)cell_size;      // back near the start -> re-arm
     const float armDist = (float)cell_size * 1.5f; // dragged this far -> lock the bend in
@@ -661,10 +661,10 @@ void Sheet::UpdateDraggingState(const Vector2& world_mouse_pos)
     }
 }
 
-void Sheet::UpdateConnectingState(const Vector2& world_mouse_pos)
+void Sheet::UpdateConnectingState()
 {
-    if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
-        Vector2 destination_pos = { round(world_mouse_pos.x / cell_size) * cell_size, round(world_mouse_pos.y / cell_size) * cell_size };
+    if (!mouse_inputs.leftButtonDown) {
+        Vector2 destination_pos = { round(mouse_inputs.mousePositionWorld.x / cell_size) * cell_size, round(mouse_inputs.mousePositionWorld.y / cell_size) * cell_size };
 
         if (connecting_context.type == ConnectingContext::JUNCTION) {
             auto& sourceWire = circuit.getWire(connecting_context.wireID);
@@ -707,14 +707,14 @@ void Sheet::UpdateConnectingState(const Vector2& world_mouse_pos)
             else {
                 // released over an existing wire? tap it into this input
                 for (auto& wire : circuit.m_wires) {
-                    int nodeID = wire.findNodeAt(world_mouse_pos);
+                    int nodeID = wire.findNodeAt(mouse_inputs.mousePositionWorld);
                     if (nodeID != -1) {
                         circuit.extendWireTo(wire.ID, nodeID, input_pin, input_pos, flipped);
                         action_manager.AddSnapshot(circuit.GetSnapshot("Extended wire to node"));
                         break;
                     }
 
-                    WireSegment segment = wire.findSegmentAt(world_mouse_pos);
+                    WireSegment segment = wire.findSegmentAt(mouse_inputs.mousePositionWorld);
                     if (segment.first != -1) {
                         circuit.extendWireTo(wire.ID, segment, destination_pos, input_pin, input_pos, flipped);
                         action_manager.AddSnapshot(circuit.GetSnapshot("Extended wire to segment"));
@@ -755,7 +755,7 @@ void Sheet::UpdateConnectingState(const Vector2& world_mouse_pos)
     else
         dragSource = connecting_context.sourcePos;
 
-    Vector2 fromSource = { world_mouse_pos.x - dragSource.x, world_mouse_pos.y - dragSource.y };
+    Vector2 fromSource = { mouse_inputs.mousePositionWorld.x - dragSource.x, mouse_inputs.mousePositionWorld.y - dragSource.y };
     float distSq = fromSource.x * fromSource.x + fromSource.y * fromSource.y;
     const float resetDist = (float)cell_size;      // back near the source -> re-arm
     const float armDist = (float)cell_size * 1.5f; // dragged this far away -> lock the bend in
@@ -774,7 +774,7 @@ void Sheet::UpdateConnectingState(const Vector2& world_mouse_pos)
     for (auto& Component : circuit.m_components) {
         if (connecting_context.type == ConnectingContext::INPUT) {
             // dragging from an input: the thing we can land on is an output pin
-            auto output_pin_index = Component->outputPinContainsPoint(world_mouse_pos);
+            auto output_pin_index = Component->outputPinContainsPoint(mouse_inputs.mousePositionWorld);
             if (output_pin_index != -1) {
                 connecting_context.targetPin = { Component->m_id, output_pin_index };
                 found_target = true;
@@ -782,7 +782,7 @@ void Sheet::UpdateConnectingState(const Vector2& world_mouse_pos)
             }
         }
         else {
-            auto input_pin_index = Component->inputPinsContainPoint(world_mouse_pos);
+            auto input_pin_index = Component->inputPinsContainPoint(mouse_inputs.mousePositionWorld);
             if (input_pin_index != -1 && Component->getInputWireId(input_pin_index) == -1) {
                 connecting_context.targetPin = { Component->m_id, input_pin_index };
                 found_target = true;
@@ -795,15 +795,15 @@ void Sheet::UpdateConnectingState(const Vector2& world_mouse_pos)
         connecting_context.targetPin = { -1, -1 };
 }
 
-void Sheet::UpdateSelectingState(const Vector2& world_mouse_pos)
+void Sheet::UpdateSelectingState()
 {
-    if (IsMouseButtonUp(MouseButton::MOUSE_BUTTON_LEFT)) {
+    if (!mouse_inputs.leftButtonDown) {
         current_mouse_state = MouseState::Idle;
         selecting_context = { {0, 0}, {0, 0}, {0, 0, 0, 0} };
         return;
     }
 
-    selecting_context.selectionEnd = world_mouse_pos;
+    selecting_context.selectionEnd = mouse_inputs.mousePositionWorld;
 
     Vector2 topLeft = {
         std::min(selecting_context.selectionStart.x, selecting_context.selectionEnd.x),

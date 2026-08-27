@@ -15,6 +15,14 @@ struct UITheme {
 	Color logicX;      // Undefined
 };
 
+struct MouseInputs {
+	bool leftButtonDown			= false;
+	bool rightButtonDown		= false;
+	Vector2 mousePositionScreen = { 0, 0 };
+	Vector2 mousePositionWorld	= { 0, 0 };
+	float mouseWheelDelta		= 0.0f;
+};
+
 struct PanningContext {
 	Vector2 initial_pos;
 	Vector2 initial_camera_target;
@@ -59,20 +67,25 @@ public:
 	void UI();
 	void Draw();
 
+	void SetViewport(Rectangle viewport);
+	void SetMouseInputs(MouseInputs input) { mouse_inputs = input; }
+	Rectangle GetViewport() const { return viewport; }
+	const Camera2D& GetCamera() const { return camera; }
+	Circuit& GetCircuit() { return circuit; }
+
+private:
 	void DrawGrid() const;
 
-	void UpdateIdleState(const Vector2& mouse_pos);
-	void UpdatePanningState(const Vector2& mouse_pos);
-	void UpdateDraggingState(const Vector2& mouse_pos);
-	void UpdateConnectingState(const Vector2& mouse_pos);
-	void UpdateSelectingState(const Vector2& mouse_pos);
+	void UpdateIdleState();
+	void UpdatePanningState();
+	void UpdateDraggingState();
+	void UpdateConnectingState();
+	void UpdateSelectingState();
 	std::vector<componentInfo > getNodeInfoCopy(std::vector<int>& ids);
 	std::vector<componentInfo > getNodeInfoDeletion(std::vector<int>& ids);
 
 	void clearSelection();
 
-	void SetViewport(Rectangle viewport);
-	Rectangle GetViewport() const { return viewport; }
 
 	Rectangle viewport;
 
@@ -80,7 +93,7 @@ public:
 
 	enum class MouseState { Idle, Panning, Dragging, Connecting, Selecting };
 
-	void(Sheet::* mouse_state_update_functions[5])(const Vector2& mouse_pos) = {
+	void(Sheet::* mouse_state_update_functions[5])() = {
 		&Sheet::UpdateIdleState,
 		&Sheet::UpdatePanningState,
 		&Sheet::UpdateDraggingState,
@@ -139,4 +152,6 @@ public:
 	{ 0, 255, 0, 255 },
 	{ 255, 165, 0, 255 }
 	};
+
+	MouseInputs mouse_inputs;
 };
