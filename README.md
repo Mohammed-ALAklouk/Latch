@@ -25,6 +25,9 @@ time. Built in C++20 with [raylib](https://www.raylib.com/) for rendering and
 - **Editing tools** — rubber-band selection, copy/paste, delete, and full
   undo/redo backed by circuit snapshots.
 - **Infinite canvas** — pan and zoom over a grid that components snap to.
+- **Multiple sheets** — keep several independent circuits open as named tabs;
+  add, delete, rename, and switch between them. The component palette and the
+  clipboard are shared, so you can copy from one sheet and paste into another.
 
 ## Controls
 
@@ -40,7 +43,8 @@ time. Built in C++20 with [raylib](https://www.raylib.com/) for rendering and
 | Pan | Left-drag on empty canvas |
 | Zoom | Mouse wheel |
 
-Pick which component right-click places from the **Components** panel.
+Pick which component right-click places from the **Components** panel. Mouse and
+keyboard actions apply to the focused sheet — the one under the cursor.
 
 ### Keyboard
 
@@ -55,11 +59,15 @@ Pick which component right-click places from the **Components** panel.
 
 ### UI panels
 
-- **Components** — choose the component type for right-click placement.
+- **Components** — choose the component type for right-click placement (shared
+  across all sheets).
+- **Sheets** — the open sheets as tabs; add a new one (with an optional title),
+  delete, and switch the active sheet.
 - **Simulation** — `Step`, `Run`/`Stop`, and a ticks-per-second slider; shows the
-  tick count.
+  tick count for the active sheet.
 - **Selected Component Info** — details of a single selected gate or wire node.
-- **Snapshots** — the undo/redo history, with the current state highlighted.
+- **Snapshots** — the active sheet's undo/redo history, with the current state
+  highlighted.
 
 ## Building
 
@@ -144,7 +152,9 @@ vendoring needed:
 ```
 src/
   main.cpp          Entry point
-  App.{h,cpp}       Main loop, input handling, mouse-state machine, rendering
+  App.{h,cpp}       Window loop, input reading, sheet tabs, shared clipboard/palette
+  Sheet.{h,cpp}     One circuit's editor: viewport, camera, selection, mouse-state
+                    machine, and the copy/paste/delete/undo/step commands
   Circuit.{h,cpp}   Component/wire storage, evaluation, snapshots
   Gate.{h,cpp}      Gate base class, per-gate logic and lookup tables
   Wire.{h,cpp}      Orthogonal wire geometry: nodes, segments, routing
@@ -164,11 +174,16 @@ and the test suite link against.
 
 ## How it works
 
-The `App` runs a mouse-state machine (`Idle`, `Panning`, `Dragging`,
-`Connecting`, `Selecting`) each frame. `Circuit` owns the components and wires
-and evaluates the network on each tick using per-gate three-valued lookup
-tables. Editing operations capture a `CircuitSnapshot` into the `ActionManager`,
-which powers undo/redo and the Snapshots panel.
+The `App` owns the window loop and the set of open **sheets**. Each frame it
+reads mouse and keyboard input and forwards it to the focused sheet, together
+with the shared clipboard and selected component type. Each `Sheet` wraps one
+`Circuit` plus its own editor state — viewport, camera, selection, and undo
+history — and runs a mouse-state machine (`Idle`, `Panning`, `Dragging`,
+`Connecting`, `Selecting`). Discrete editor actions (delete, copy, paste, undo,
+redo, step) are `Sheet` methods the `App` dispatches from keyboard shortcuts.
+`Circuit` evaluates the network on each tick using per-gate three-valued lookup
+tables, and editing operations capture a `CircuitSnapshot` into the
+`ActionManager`, which powers undo/redo and the Snapshots panel.
 
 ## License
 
