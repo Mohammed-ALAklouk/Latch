@@ -21,31 +21,34 @@ App::~App()
     CloseWindow();
 }
 
+void App::GetInputs(MouseInputs& mouse_inputs, KeyboardInputs& keyboard_inputs)
+{
+    mouse_inputs.leftButtonDown = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    mouse_inputs.rightButtonDown = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+    mouse_inputs.mousePositionScreen = GetMousePosition();
+    mouse_inputs.mousePositionWorld = GetScreenToWorld2D(GetMousePosition(), sheet.GetCamera());
+    mouse_inputs.mouseWheelDelta = GetMouseWheelMove();
+
+    keyboard_inputs.shiftDown = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+    keyboard_inputs.ctrlDown = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+    keyboard_inputs.CPressed = IsKeyPressed(KEY_C);
+    keyboard_inputs.VPressed = IsKeyPressed(KEY_V);
+    keyboard_inputs.ZPressed = IsKeyPressed(KEY_Z);
+    keyboard_inputs.YPressed = IsKeyPressed(KEY_Y);
+    keyboard_inputs.deletePressed = IsKeyPressed(KEY_DELETE);
+    keyboard_inputs.spacePressed = IsKeyPressed(KEY_SPACE);
+}
+
 void App::HandleInput()
 {
     if (IsWindowResized())
 		sheet.SetViewport({ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() });
 
-    MouseInputs mouse_inputs = {
-        IsMouseButtonDown(MOUSE_BUTTON_LEFT),
-        IsMouseButtonDown(MOUSE_BUTTON_RIGHT),
-		GetMousePosition(),
-        GetScreenToWorld2D(GetMousePosition(), sheet.GetCamera()),
-        GetMouseWheelMove()
-	};
-
-    KeyboardInputs keyboard_inputs = {
-        IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT),
-		IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL),
-        IsKeyPressed(KEY_C),
-        IsKeyPressed(KEY_V),
-        IsKeyPressed(KEY_Z),
-        IsKeyPressed(KEY_Y),
-        IsKeyPressed(KEY_DELETE),
-        IsKeyPressed(KEY_SPACE),
-	};
-	sheet.SetMouseInputs(mouse_inputs);
-	sheet.SetKeyboardInputs(keyboard_inputs);
+    
+	MouseInputs mouse_inputs;
+	KeyboardInputs keyboard_inputs;
+	GetInputs(mouse_inputs, keyboard_inputs);
+	sheet.SetInputs(mouse_inputs, keyboard_inputs);
 	sheet.HandleInput();
 }
 

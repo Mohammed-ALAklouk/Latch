@@ -44,10 +44,10 @@ void Sheet::HandleInput()
     if (!mouse_inputs.rightButtonDown)
         gate_placed = false;
 
-    if (keyboard_inputs.spaceDown)
+    if (keyboard_inputs.spacePressed)
         circuit.evaluate();
 
-    if (keyboard_inputs.deleteDown) {
+    if (keyboard_inputs.deletePressed) {
         for (int id : selected_component_ids) {
             circuit.removeComponent(id);
         }
@@ -70,7 +70,7 @@ void Sheet::HandleInput()
 
     if (keyboard_inputs.ctrlDown)
     {
-        if (keyboard_inputs.CDown) {
+        if (keyboard_inputs.CPressed) {
             Vector2 min = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
             Vector2 max = { std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() };
 
@@ -98,7 +98,7 @@ void Sheet::HandleInput()
 
             copy_center = { (min.x + max.x) / 2.0f, (min.y + max.y) / 2.0f };
         }
-        if (keyboard_inputs.VDown) {
+        if (keyboard_inputs.VPressed) {
 			Vector2 mouse_pos = mouse_inputs.mousePositionWorld;
             Vector2 displacement = { mouse_pos.x - copy_center.x, mouse_pos.y - copy_center.y };
 
@@ -106,12 +106,12 @@ void Sheet::HandleInput()
             action_manager.AddSnapshot(circuit.GetSnapshot("Pasted components and wires"));
         }
 
-        if (keyboard_inputs.ZDown) {
+        if (keyboard_inputs.ZPressed) {
             action_manager.undo(circuit);
             clearSelection();
         }
 
-        if (keyboard_inputs.YDown) {
+        if (keyboard_inputs.YPressed) {
             action_manager.redo(circuit);
             clearSelection();
         }

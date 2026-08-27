@@ -18,6 +18,8 @@ private:
 	void UI();
 	void Draw() ;
 
+	void GetInputs(MouseInputs& mouse_inputs, KeyboardInputs& keyboard_inputs);
+
 	int window_width = 800;
 	int window_height = 450;
 

@@ -26,12 +26,12 @@ struct MouseInputs {
 struct KeyboardInputs {
 	bool shiftDown = false;
 	bool ctrlDown = false;
-	bool CDown = false;
-	bool VDown = false;
-	bool ZDown = false;
-	bool YDown = false;
-	bool deleteDown = false;
-	bool spaceDown = false;
+	bool CPressed = false;
+	bool VPressed = false;
+	bool ZPressed = false;
+	bool YPressed = false;
+	bool deletePressed = false;
+	bool spacePressed = false;
 };
 
 struct PanningContext {
@@ -79,8 +79,7 @@ public:
 	void Draw();
 
 	void SetViewport(Rectangle viewport);
-	void SetMouseInputs(MouseInputs input) { mouse_inputs = input; }
-	void SetKeyboardInputs(KeyboardInputs input) { keyboard_inputs = input; }
+	void SetInputs(MouseInputs input, KeyboardInputs keyboard_input) { mouse_inputs = input; keyboard_inputs = keyboard_input; }
 	Rectangle GetViewport() const { return viewport; }
 	const Camera2D& GetCamera() const { return camera; }
 	Circuit& GetCircuit() { return circuit; }
